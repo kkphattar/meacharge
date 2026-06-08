@@ -1,0 +1,62 @@
+{% extends 'admin/base.html' %}
+{% block title %}ข้อมูลส่วนตัว{% endblock %}
+
+{% block content %}
+<h3 class="mb-4">👤 ข้อมูลส่วนตัว</h3>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<form method="POST" class="row g-3">
+    <div class="col-md-6">
+        <label class="form-label">ชื่อ</label>
+        <input type="text" name="first_name" class="form-control" value="{{ user.first_name }}" required>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">นามสกุล</label>
+        <input type="text" name="last_name" class="form-control" value="{{ user.last_name }}" required>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">อีเมล</label>
+        <input type="email" name="email" class="form-control" value="{{ user.email }}" required>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">เบอร์โทรศัพท์</label>
+        <input type="text" name="phone" class="form-control" value="{{ user.phone }}">
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">หน่วยงาน</label>
+        <select name="departments" class="form-select select2" required>
+            <option value="ฝวจ">ฝวจ</option>
+            <option value="ฝวฟ">ฝวฟ</option>
+            <option value="ฟขต">ฟขต</option>
+        </select>
+    </div>
+    <div class="col-12">
+        <hr>
+        <h5>🔐 เปลี่ยนรหัสผ่าน</h5>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">รหัสผ่านปัจจุบัน</label>
+        <input type="password" name="current_password" class="form-control">
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">รหัสผ่านใหม่</label>
+        <input type="password" name="new_password" class="form-control">
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">ยืนยันรหัสผ่านใหม่</label>
+        <input type="password" name="confirm_password" class="form-control">
+    </div>
+
+    <div class="col-12">
+        <button type="submit" class="btn btn-primary">💾 บันทึก</button>
+        <a href="{{ url_for('admin_bp.dashboard') }}" class="btn btn-secondary">↩️ กลับ</a>
+    </div>
+</form>
+{% endblock %}

@@ -1,0 +1,303 @@
+{% extends 'admin/base.html' %}
+{% block title %}ประวัติการชาร์จ{% endblock %}
+
+{% block content %}
+<style>
+    .stat-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.25rem 1.5rem;
+    }
+    .stat-card .stat-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--primary-orange);
+    }
+    .stat-card .stat-label {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .filter-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .table-dark-custom {
+        background-color: var(--card-bg);
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+    }
+    .table-dark-custom table {
+        color: var(--text-light);
+        margin-bottom: 0;
+    }
+    .table-dark-custom thead th {
+        background-color: rgba(255, 107, 53, 0.15);
+        color: var(--primary-orange);
+        border-color: var(--border-color);
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        white-space: nowrap;
+    }
+    .table-dark-custom tbody td {
+        border-color: rgba(255,255,255,0.06);
+        vertical-align: middle;
+    }
+    .table-dark-custom tbody tr:hover {
+        background-color: rgba(255, 107, 53, 0.06);
+    }
+    .form-control, .form-select {
+        background-color: #3a3a3a;
+        border-color: var(--border-color);
+        color: var(--text-light);
+    }
+    .form-control:focus, .form-select:focus {
+        background-color: #3a3a3a;
+        border-color: var(--primary-orange);
+        color: var(--text-light);
+        box-shadow: 0 0 0 0.2rem rgba(255,107,53,.15);
+    }
+    .form-control::placeholder { color: #777; }
+    .badge-cp {
+        background: rgba(255,107,53,0.2);
+        color: var(--primary-orange);
+        font-size: 0.75rem;
+        padding: 0.3em 0.6em;
+        border-radius: 6px;
+    }
+    .energy-value {
+        font-weight: 600;
+        color: #4fc3f7;
+    }
+    .duration-value {
+        font-size: 0.82rem;
+        color: var(--text-muted);
+    }
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: var(--text-muted);
+    }
+    .empty-state i { font-size: 3rem; opacity: 0.3; }
+    .page-header {
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 1rem;
+        margin-bottom: 1.5rem;
+    }
+</style>
+
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div>
+        <h3 class="mb-0"><i class="bi bi-lightning-charge me-2" style="color:var(--primary-orange)"></i>ประวัติการชาร์จ</h3>
+        <small class="text-muted">ข้อมูลการชาร์จพลังงานทั้งหมดในระบบ</small>
+    </div>
+    <a href="{{ url_for('admin_bp.export_charge_history') }}{% if request.query_string %}?{{ request.query_string.decode() }}{% endif %}"
+       class="btn btn-outline-success btn-sm">
+        <i class="bi bi-download me-1"></i>Export CSV
+    </a>
+</div>
+
+<!-- Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ total_sessions }}</div>
+            <div class="stat-label"><i class="bi bi-plug me-1"></i>ครั้งทั้งหมด</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ "%.2f"|format(total_energy) }}</div>
+            <div class="stat-label"><i class="bi bi-battery-charging me-1"></i>พลังงานรวม (kWh)</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ unique_users }}</div>
+            <div class="stat-label"><i class="bi bi-people me-1"></i>ผู้ใช้งาน</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ unique_stations }}</div>
+            <div class="stat-label"><i class="bi bi-geo-alt me-1"></i>สถานีที่ใช้</div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Panel -->
+<div class="filter-card">
+    <form method="GET" action="{{ url_for('admin_bp.charge_history') }}" id="filterForm">
+        <div class="row g-3 align-items-end">
+            <div class="col-12 col-md-3">
+                <label class="form-label text-muted small mb-1">ค้นหา (ชื่อ / ทะเบียน / สถานี)</label>
+                <input type="text" name="q" class="form-control form-control-sm"
+                       placeholder="พิมพ์เพื่อค้นหา..." value="{{ filters.q }}">
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label text-muted small mb-1">วันที่เริ่มต้น</label>
+                <input type="date" name="date_from" class="form-control form-control-sm"
+                       value="{{ filters.date_from }}">
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label text-muted small mb-1">วันที่สิ้นสุด</label>
+                <input type="date" name="date_to" class="form-control form-control-sm"
+                       value="{{ filters.date_to }}">
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label text-muted small mb-1">สถานีชาร์จ</label>
+                <select name="station" class="form-select form-select-sm">
+                    <option value="">-- ทั้งหมด --</option>
+                    {% for s in station_list %}
+                    <option value="{{ s }}" {% if filters.station == s %}selected{% endif %}>{{ s }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-sm btn-warning flex-fill">
+                        <i class="bi bi-search me-1"></i>ค้นหา
+                    </button>
+                    <a href="{{ url_for('admin_bp.charge_history') }}" class="btn btn-sm btn-outline-secondary flex-fill">
+                        <i class="bi bi-x me-1"></i>ล้าง
+                    </a>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Table -->
+<div class="table-dark-custom">
+    {% if history %}
+    <div class="table-responsive">
+        <table class="table table-hover mb-0" id="historyTable">
+            <thead>
+                <tr>
+                    <th style="width:50px">#</th>
+                    <th>ผู้ใช้งาน</th>
+                    <th>ทะเบียนรถ</th>
+                    <th>สถานี / Connector</th>
+                    <th>Transaction ID</th>
+                    <th>เวลาเริ่ม</th>
+                    <th>เวลาสิ้นสุด</th>
+                    <th>ระยะเวลา</th>
+                    <th class="text-end">พลังงาน (kWh)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in history %}
+                {% set duration_min = row.duration_minutes %}
+                <tr>
+                    <td class="text-muted small">{{ loop.index + (page - 1) * per_page }}</td>
+                    <td>
+                        {% if row.customer %}
+                            <div class="fw-semibold">{{ row.customer.first_name }} {{ row.customer.last_name }}</div>
+                            <div class="text-muted small">{{ row.customer.department or '' }}</div>
+                        {% else %}
+                            <span class="text-muted small">{{ row.user_id or 'ไม่ทราบ' }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if row.selected_plate %}
+                            <span class="badge-cp">{{ row.selected_plate }}</span>
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="badge-cp">{{ row.charge_point_id or '-' }}</div>
+                        <div class="text-muted small mt-1">Conn: {{ row.connector_id or '-' }}</div>
+                    </td>
+                    <td><span class="text-muted small font-monospace">{{ row.transaction_id or '-' }}</span></td>
+                    <td>
+                        {% if row.start_time %}
+                            <div>{{ row.start_time.strftime('%d/%m/%Y') }}</div>
+                            <div class="text-muted small">{{ row.start_time.strftime('%H:%M') }}</div>
+                        {% else %}<span class="text-muted">-</span>{% endif %}
+                    </td>
+                    <td>
+                        {% if row.stop_time %}
+                            <div>{{ row.stop_time.strftime('%d/%m/%Y') }}</div>
+                            <div class="text-muted small">{{ row.stop_time.strftime('%H:%M') }}</div>
+                        {% else %}<span class="text-muted">-</span>{% endif %}
+                    </td>
+                    <td>
+                        {% if duration_min is not none %}
+                            <span class="duration-value">
+                                {% if duration_min >= 60 %}
+                                    {{ (duration_min // 60)|int }}h {{ (duration_min % 60)|int }}m
+                                {% else %}
+                                    {{ duration_min|int }} นาที
+                                {% endif %}
+                            </span>
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <span class="energy-value">{{ "%.3f"|format(row.energy_used or 0) }}</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr style="background:rgba(255,107,53,0.08);">
+                    <td colspan="8" class="text-end fw-semibold text-muted small">รวมพลังงาน (หน้านี้):</td>
+                    <td class="text-end fw-bold" style="color:var(--primary-orange)">
+                        {{ "%.3f"|format(page_energy) }} kWh
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if total_pages > 1 %}
+    <div class="d-flex justify-content-between align-items-center px-3 py-2"
+         style="border-top:1px solid var(--border-color)">
+        <small class="text-muted">
+            แสดง {{ (page - 1) * per_page + 1 }}–{{ [page * per_page, total_sessions]|min }} จาก {{ total_sessions }} รายการ
+        </small>
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item {% if page == 1 %}disabled{% endif %}">
+                    <a class="page-link bg-transparent text-light border-secondary"
+                       href="?{{ build_query(page=page-1) }}">‹</a>
+                </li>
+                {% for p in range([1, page-2]|max, [total_pages+1, page+3]|min) %}
+                <li class="page-item {% if p == page %}active{% endif %}">
+                    <a class="page-link {% if p == page %}bg-warning border-warning text-dark{% else %}bg-transparent text-light border-secondary{% endif %}"
+                       href="?{{ build_query(page=p) }}">{{ p }}</a>
+                </li>
+                {% endfor %}
+                <li class="page-item {% if page == total_pages %}disabled{% endif %}">
+                    <a class="page-link bg-transparent text-light border-secondary"
+                       href="?{{ build_query(page=page+1) }}">›</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-lightning-charge d-block mb-3"></i>
+        <p class="mb-0">ยังไม่มีประวัติการชาร์จ</p>
+        {% if filters.q or filters.date_from or filters.date_to or filters.station %}
+        <a href="{{ url_for('admin_bp.charge_history') }}" class="btn btn-sm btn-outline-secondary mt-3">
+            ล้างตัวกรอง
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

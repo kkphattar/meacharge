@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>ลืมรหัสผ่าน</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f1f3f5;
+        }
+        .forgot-container {
+            max-width: 450px;
+            margin-top: 100px;
+            padding: 30px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+<div class="container d-flex justify-content-center align-items-center min-vh-100">
+    <div class="forgot-container">
+        <h4 class="text-center mb-4">🔑 ลืมรหัสผ่าน</h4>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <form method="POST">
+            <div class="mb-3">
+                <label for="username" class="form-label">Username</label>
+                <input type="username" class="form-control" id="username" name="username" placeholder="Username" required>
+            </div>            
+            <div class="mb-3">
+                <label for="email" class="form-label">E-mail</label>
+                <input type="email" class="form-control" id="email" name="email" placeholder="your@email.com" required>
+            </div>
+            <div class="d-grid mb-3">
+                <button type="submit" class="btn btn-primary">📩 ส่งคำขอรีเซ็ตรหัสผ่าน</button>
+            </div>
+            <div class="text-center">
+                <a href="{{ url_for('admin_bp.login') }}" class="text-decoration-none">ย้อนกลับหน้าล็อกอิน</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

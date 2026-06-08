@@ -1,0 +1,46 @@
+{% extends 'admin/base.html' %}
+{% block title %}ลูกค้า (Customer){% endblock %}
+{% block content %}
+
+  <div class="container">
+    <h1 class="mb-4">Redis Sessions</h1>
+    
+    {% if sessions %}
+      <table class="table table-bordered table-striped">
+        <thead>
+          <tr>
+            <th>Session Key</th>
+            <th>Username</th>
+            <th>User ID</th>
+            <th>Transactions ID</th>
+            <!-- <th>Data</th> -->
+            <th>TTL (sec)</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in sessions %}
+          <tr>
+            <td>{{ s.key }}</td>
+            <td>{{ s.username }}</td>
+            <td>{{ s.user_id }}</td>
+            <td>{{ s.transaction_id }}</td>  
+            <!-- <td><pre>{{ s.data | string }}</pre></td> -->
+            <td>{{ s.ttl }}</td>
+            <td>
+              <a href="{{ url_for('admin_bp.delete_session', session_id=s.key) }}" 
+                 class="btn btn-danger btn-sm"
+                 onclick="return confirm('Delete this session?');">
+                 Delete
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="alert alert-info">No active sessions found.</div>
+    {% endif %}
+  </div>
+
+{% endblock %}

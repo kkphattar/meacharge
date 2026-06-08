@@ -1,0 +1,66 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}แก้ไขข้อมูลผู้ดูแลระบบ{% endblock %}
+
+{% block content %}
+<h3 class="mb-4">✏️ แก้ไขข้อมูลผู้ดูแลระบบ</h3>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<form method="POST" class="row g-3">
+    <div class="col-md-6">
+        <label class="form-label">ชื่อผู้ใช้ (Username)</label>
+        <input type="text" name="username" class="form-control" value="{{ user.username }}" readonly>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">อีเมล</label>
+        <input type="email" name="email" class="form-control" value="{{ user.email }}" required>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">ชื่อ</label>
+        <input type="text" name="first_name" class="form-control" value="{{ user.first_name }}" required>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">นามสกุล</label>
+        <input type="text" name="last_name" class="form-control" value="{{ user.last_name }}" required>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">MEA ID</label>
+        <input type="text" name="mea_id" class="form-control" value="{{ user.mea_id }}" required>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">เบอร์โทรศัพท์</label>
+        <input type="text" name="phone" class="form-control" value="{{ user.phone }}" required>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">หน่วยงาน</label>
+        <select name="departments" class="form-select select2" required>
+            {% set dept_options = ['ฝวจ', 'ฝวฟ', 'ฟขต'] %}
+            {% for dept in dept_options %}
+                <option value="{{ dept }}" {% if user.departments == dept %}selected{% endif %}>{{ dept }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">สิทธิ์</label>
+        <select name="role" class="form-select" required>
+            <option value="Admin" {% if user.role == 'Admin' %}selected{% endif %}>Admin</option>
+            <option value="SuperAdmin" {% if user.role == 'SuperAdmin' %}selected{% endif %}>SuperAdmin</option>
+            <option value="Admin_orange" {% if user.role == 'Admin_orange' %}selected{% endif %}>Admin_orange</option>
+            <option value="Admin_white" {% if user.role == 'Admin_white' %}selected{% endif %}>Admin_white</option>
+            <option value="Guest" {% if user.role == 'Guest' %}selected{% endif %}>Guest</option>
+        </select>
+    </div>
+    <div class="col-12">
+        <button type="submit" class="btn btn-primary">💾 บันทึกการแก้ไข</button>
+        <a href="{{ url_for('admin_bp.dashboard') }}" class="btn btn-secondary">↩️ กลับ</a>
+    </div>
+</form>
+
+{% endblock %}

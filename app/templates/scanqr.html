@@ -1,0 +1,205 @@
+{% extends 'customer_base.html' %}
+{% block title %}สแกน QR{% endblock %}
+
+{% block content %}
+
+<!-- ================= FORCE CHROME (LINE ANDROID ONLY) ================= -->
+<script>
+(function forceChromeAndroid(){
+  const ua = navigator.userAgent || "";
+  const isLine = /Line/i.test(ua);
+  const isAndroid = /Android/i.test(ua);
+
+  if (isLine && isAndroid) {
+    if (!sessionStorage.getItem("force_chrome")) {
+      sessionStorage.setItem("force_chrome", "1");
+
+      const url = location.href.replace(/^https?:\/\//, "");
+      location.href =
+        "intent://" + url +
+        "#Intent;scheme=https;package=com.android.chrome;end";
+    }
+  }
+})();
+</script>
+
+<style>
+#reader {
+  position: relative;
+  width: 100%;
+  height: calc(100vh - 120px);
+  background: #000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.cancel-btn {
+  position:absolute;
+  top:12px;
+  left:12px;
+  z-index:20;
+}
+
+.camera-toggle {
+  position:absolute;
+  top:12px;
+  right:12px;
+  z-index:20;
+  width:44px;
+  height:44px;
+  border-radius:8px;
+  background:rgba(0,0,0,.5);
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+}
+
+#scanResult {
+  margin-top:10px;
+  font-weight:700;
+}
+</style>
+
+<div class="container-fluid p-0">
+  <div id="reader">
+    <a href="{{ url_for('line_bp.customer_home') }}"
+       class="btn btn-light cancel-btn">ยกเลิก</a>
+
+    <div id="toggleCam" class="camera-toggle">🔄</div>
+    <div id="reader_inner" style="width:100%;height:100%"></div>
+  </div>
+
+  <div class="text-center p-2">
+    <div id="scanResult">กำลังเปิดกล้อง...</div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<script>
+(async function(){
+
+/* ================= DOM ================= */
+const readerEl = document.getElementById("reader_inner");
+const resultEl = document.getElementById("scanResult");
+const toggleBtn = document.getElementById("toggleCam");
+
+/* ================= STATE ================= */
+let qr = null;
+let cameras = [];
+let camIndex = 0;
+let running = false;
+
+/* ================= CAMERA ================= */
+async function loadCameras(){
+  try {
+    const list = await Html5Qrcode.getCameras();
+    cameras = list.map((c,i)=>({
+      id: c.id,
+      label: c.label || `Camera ${i+1}`
+    }));
+
+    camIndex = cameras.findIndex(c =>
+      /back|rear|environment/i.test(c.label)
+    );
+    if (camIndex < 0) camIndex = 0;
+  } catch (e) {
+    console.error("load camera error", e);
+  }
+}
+
+async function startScanner(){
+  if (running) return;
+  if (!qr) qr = new Html5Qrcode(readerEl.id);
+
+  const cam =
+    cameras.length
+      ? { deviceId: { exact: cameras[camIndex].id } }
+      : { facingMode: "environment" };
+
+  try {
+    await qr.start(
+      cam,
+      { fps: 15, qrbox: 280 },
+      onScanSuccess,
+      () => {}
+    );
+    running = true;
+    resultEl.innerText = "ชี้กล้องไปที่ QR Code";
+  } catch (e) {
+    console.error(e);
+    resultEl.innerText =
+      "ไม่สามารถเปิดกล้องได้ กรุณาใช้ Chrome";
+  }
+}
+
+async function stopScanner(){
+  if (qr && running) {
+    await qr.stop();
+    running = false;
+  }
+}
+
+async function toggleCamera(){
+  if (cameras.length <= 1) return;
+  await stopScanner();
+  camIndex = (camIndex + 1) % cameras.length;
+  await startScanner();
+}
+
+/* ================= SCAN FLOW ================= */
+async function onScanSuccess(text){
+  resultEl.innerText = text;
+  await stopScanner();
+
+  try {
+    const res = await fetch("{{ url_for('line_bp.receive_qr') }}", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data: text })
+    });
+
+    if (!res.ok) throw "receive_qr error";
+    const r = await res.json();
+    if (!r.valid) throw "QR invalid";
+
+    const ok = confirm(
+      "เริ่มชาร์จ " + (r.cpid || "")
+    );
+    if (!ok) return startScanner();
+
+    const res2 = await fetch("{{ url_for('api.remotestart') }}", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data: text })
+    });
+
+    const r2 = await res2.json();
+    if (r2.response?.code === 200) {
+      alert("เริ่มการชาร์จเรียบร้อย");
+      location.href = "{{ url_for('line_bp.customer_home') }}";
+    } else {
+      alert(r2.response?.messages || "เริ่มชาร์จไม่สำเร็จ");
+      startScanner();
+    }
+
+  } catch (e) {
+    console.error(e);
+    alert("เกิดข้อผิดพลาด");
+    startScanner();
+  }
+}
+
+/* ================= INIT ================= */
+toggleBtn.addEventListener("click", toggleCamera);
+window.addEventListener("beforeunload", stopScanner);
+
+await loadCameras();
+await startScanner();
+
+})();
+</script>
+
+{% endblock %}

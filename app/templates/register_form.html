@@ -1,0 +1,286 @@
+{% extends "customer_base.html" %}
+
+{% block title %}ลงทะเบียนผู้ใช้งาน{% endblock %}
+
+{% block content %}
+<div class="form-container d-flex justify-content-center align-items-center py-5">
+  <div class="form-card shadow-lg p-4 rounded-4" style="max-width: 550px; width: 100%;">
+    <div class="text-center mb-4">
+      <h2 class="fw-bold text-primary">ลงทะเบียนผู้ใช้งาน</h2>
+      <p class="text-secondary mb-0">กรุณากรอกข้อมูลให้ครบถ้วน</p>
+    </div>
+
+    <form id="registerForm" method="POST" action="{{ url_for('line_bp.register') }}">
+      <input type="hidden" name="user_id" value="{{ user_id }}">
+
+      <!-- ชื่อ -->
+      <div class="form-group mb-3">
+        <label for="first_name" class="form-label fw-semibold">ชื่อ</label>
+        <input type="text" class="form-control" name="first_name" id="first_name" autocomplete="off" required>
+      </div>
+
+      <!-- นามสกุล -->
+      <div class="form-group mb-3">
+        <label for="last_name" class="form-label fw-semibold">นามสกุล</label>
+        <input type="text" class="form-control" name="last_name" id="last_name" autocomplete="off" required>
+      </div>
+
+      <!-- เบอร์โทรศัพท์ -->
+      <div class="form-group mb-3">
+        <label for="phone" class="form-label fw-semibold">เบอร์โทรศัพท์</label>
+        <input type="text" class="form-control" name="phone" id="phone" placeholder="เช่น 081-234-5678" autocomplete="off" required>
+      </div>
+
+      <!-- หน่วยงาน -->
+      <div class="form-group mb-3">
+        <label for="department" class="form-label fw-semibold">หน่วยงาน</label>
+        <input list="department_list" class="form-control" name="department" id="department" autocomplete="off" required>
+        <datalist id="department_list">
+            {% for d in department_list %}
+                <option value="{{ d }}"></option>
+            {% endfor %}
+        </datalist>
+      </div>
+
+      <!-- ประเภทผู้ขับรถ -->
+    <div class="mb-3">
+        <label for="driver_type" class="form-label">ประเภทผู้ขับรถ</label>
+        <select class="form-select" id="driver_type" name="driver_type" required>
+            <option value="">-- เลือกประเภท --</option>
+            <option value="พนักงาน MEA">พนักงาน MEA</option>
+            <option value="คนขับรถสีส้ม">คนขับรถสีส้ม</option>
+            <option value="คนขับรถสีขาว">คนขับรถสีขาว</option>
+            <option value="คนขับรถชั่วคราวสีส้ม">คนขับรถชั่วคราวสีส้ม</option>
+            <option value="คนขับรถชั่วคราวสีขาว">คนขับรถชั่วคราวสีขาว</option>
+        </select>
+    </div>
+
+        <!-- ช่องรหัสพนักงาน -->
+    <div class="mb-3" id="employee_id_group" style="display: none;">
+        <label for="employee_id" class="form-label">รหัสพนักงาน (7 หลัก)</label>
+        <input type="text" class="form-control" id="employee_id" name="employee_id" pattern="[0-9]{7}">
+    </div>
+
+
+      <!-- ทะเบียนรถ -->
+      <div class="form-group mb-3">
+        <label class="form-label fw-semibold">ทะเบียนรถ</label>
+        <div id="licenseInputs">
+          <div class="input-group mb-2 license-input">
+            <input type="text" name="license_plate[]" class="form-control license-field" placeholder="เช่น 2กข5124" maxlength="7" required>
+            <button type="button" class="btn btn-outline-danger remove-license" style="display:none;">ลบ</button>
+          </div>
+        </div>
+        <button type="button" class="btn btn-outline-primary btn-sm" id="addLicenseBtn">+ เพิ่มทะเบียนรถ</button>
+      </div>
+
+      <!-- ปุ่มลงทะเบียน -->
+      <div class="text-center mt-4">
+        <button type="submit" class="btn btn-primary w-100 fw-semibold" id="submitBtn">
+          ลงทะเบียน
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+<style>
+body {
+  background: linear-gradient(135deg, #e6f0ff, #fef9f9);
+  color: #212529;
+  font-family: 'Prompt', sans-serif;
+}
+
+.form-card {
+  background: #ffffff;
+  color: #212121;
+}
+
+.form-label {
+  color: #222;
+}
+
+input.form-control, select.form-select {
+  border: 1px solid #b0bec5;
+  background-color: #f8f9fa;
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s;
+}
+
+input.form-control:focus, select.form-select:focus {
+  border-color: #1976d2;
+  box-shadow: 0 0 0 0.2rem rgba(25,118,210,0.25);
+}
+
+.btn-primary {
+  background-color: #1976d2;
+  border: none;
+}
+
+.btn-primary:hover {
+  background-color: #115293;
+}
+
+.btn-outline-primary {
+  color: #1976d2;
+  border-color: #1976d2;
+}
+
+.btn-outline-primary:hover {
+  background-color: #1976d2;
+  color: white;
+}
+
+.btn-outline-danger {
+  border-color: #e57373;
+  color: #e57373;
+}
+
+.btn-outline-danger:hover {
+  background-color: #e57373;
+  color: white;
+}
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const driverType = document.getElementById('driver_type');
+        const employeeContainer = document.getElementById('employeeCodeContainer');
+        const employeeCode = document.getElementById('employee_id');
+        const addLicenseBtn = document.getElementById('addLicenseBtn');
+        const licenseContainer = document.getElementById('licenseInputs');
+        const form = document.getElementById('registerForm');
+
+
+
+        // === เพิ่มช่องทะเบียนรถ ===
+        addLicenseBtn.addEventListener('click', function() {
+            const newGroup = document.createElement('div');
+            newGroup.classList.add('input-group', 'mb-2', 'license-input');
+            newGroup.innerHTML = `
+                <input type="text" name="license_plate[]" class="form-control license-field"
+                    placeholder="เช่น 2กข5124" maxlength="7" required>
+                <button type="button" class="btn btn-outline-danger remove-license">ลบ</button>
+            `;
+            licenseContainer.appendChild(newGroup);
+
+            const input = newGroup.querySelector('.license-field');
+            const removeBtn = newGroup.querySelector('.remove-license');
+
+            input.addEventListener('input', () => validateLicense(input));
+            removeBtn.addEventListener('click', () => newGroup.remove());
+        });
+
+        // === ตรวจสอบรูปแบบทะเบียนรถ ===
+        function validateLicense(input) {
+            const pattern = /^[0-9ก-๙a-zA-Z]{1,7}$/;
+            const value = input.value.trim();
+            if (!pattern.test(value)) {
+                input.classList.add('is-invalid');
+            } else {
+                input.classList.remove('is-invalid');
+            }
+        }
+
+        // validate ช่องแรก
+        const firstInput = document.querySelector('.license-field');
+        firstInput.addEventListener('input', () => validateLicense(firstInput));
+
+        // === ยืนยันก่อนส่งฟอร์ม ===
+        // form.addEventListener('submit', async function(e) {
+        //     e.preventDefault();
+        //     if (!confirm('ยืนยันการลงทะเบียนผู้ใช้งานนี้หรือไม่?')) return;
+
+        //     const formData = new FormData(form);
+        //     try {
+        //         const res = await fetch(form.action, { method: 'POST', body: formData });
+        //         const data = await res.json();
+
+        //         if (res.ok && data.status === 'ok') {
+        //             alert('ลงทะเบียนสำเร็จแล้ว!');
+        //             return window.location.href = "{{ url_for('line_bp.customer_home') }}";
+        //         } else {
+        //             // ถ้า server ส่ง status != ok หรือ status code 400
+        //             const errors = data.errors || ['เกิดข้อผิดพลาดไม่ทราบสาเหตุ'];
+        //             alert('เกิดข้อผิดพลาด:\n' + errors.join('\n'));
+        //         }
+        //     } catch (err) {
+        //         console.error(err);
+        //         alert('ไม่สามารถติดต่อ server ได้ โปรดลองใหม่');
+        //     }
+        // });
+        form.addEventListener('submit', async function(e) {
+          e.preventDefault();
+
+          // -----------------------------
+          // ตรวจสอบ department ก่อน submit
+          // -----------------------------
+          const departmentInput = document.getElementById("department").value.trim();
+          const deptOptions = Array.from(document.querySelectorAll("#department_list option"))
+                                  .map(opt => opt.value);
+
+          if (!deptOptions.includes(departmentInput)) {
+              alert("กรุณาเลือกหน่วยงานจากรายการที่กำหนด");
+              return; // ❌ หยุด submit
+          }
+
+          // -----------------------------
+          // ยืนยันก่อนแก้ไขข้อมูล
+          // -----------------------------
+          if (!confirm('ยืนยันการลงทะเบียนผู้ใช้งานนี้หรือไม่?')) return;
+
+          // -----------------------------
+          // ส่งข้อมูลไปยัง server
+          // -----------------------------
+          const formData = new FormData(form);
+          try {
+              const res = await fetch(form.action, { method: 'POST', body: formData });
+              const data = await res.json();
+
+              if (res.ok && data.status === 'ok') {
+                  alert('ลงทะเบียนสำเร็จแล้ว!');
+                  return window.location.href = "{{ url_for('line_bp.customer_home') }}";
+              } else {
+                  const errors = data.errors || ['เกิดข้อผิดพลาดไม่ทราบสาเหตุ'];
+                  alert('เกิดข้อผิดพลาด:\n' + errors.join('\n'));
+              }
+          } catch (err) {
+              console.error(err);
+              alert('ไม่สามารถติดต่อ server ได้ โปรดลองใหม่');
+          }
+      });
+
+    
+        const driverTypeSelect = document.getElementById('driver_type');
+        const employeeIdGroup = document.getElementById('employee_id_group');
+
+        function toggleEmployeeField() {
+            const selected = driverTypeSelect.value;
+            if (selected === 'พนักงาน MEA' || selected === 'พนักงาน กฟน.' || selected === 'gfn_staff') {
+                employeeIdGroup.style.display = 'block';
+            } else {
+                employeeIdGroup.style.display = 'none';
+            }
+        }
+                // เรียกตอนโหลดหน้า
+        toggleEmployeeField();
+
+        // เรียกทุกครั้งที่เปลี่ยนค่า
+        driverTypeSelect.addEventListener('change', toggleEmployeeField);
+
+    });
+</script>
+{% endblock %}
+
+
+        <!-- // === แสดง/ซ่อนช่องรหัสพนักงาน ===
+        driverType.addEventListener('change', function() {
+            if (this.value === 'พนักงาน กฟน.') {
+                employeeContainer.style.display = 'block';
+                employeeCode.setAttribute('required', 'true');
+            } else {
+                employeeContainer.style.display = 'none';
+                employeeCode.removeAttribute('required');
+                employeeCode.value = '';
+            }
+        }); -->

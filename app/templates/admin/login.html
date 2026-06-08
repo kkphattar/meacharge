@@ -1,0 +1,50 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}เข้าสู่ระบบ{% endblock %}
+
+{% block content %}
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+  <div class="card shadow p-4" style="width: 100%; max-width: 420px;">
+    <h3 class="text-center mb-4">🔐 เข้าสู่ระบบผู้ดูแล</h3>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" novalidate>
+      {{ form.hidden_tag() }}
+
+      <div class="mb-3">
+        {{ form.username.label(class="form-label") }}
+        {{ form.username(class="form-control", placeholder="ชื่อผู้ใช้") }}
+        {% for error in form.username.errors %}
+          <div class="text-danger small">{{ error }}</div>
+        {% endfor %}
+      </div>
+
+      <div class="mb-3">
+        {{ form.password.label(class="form-label") }}
+        {{ form.password(class="form-control", placeholder="รหัสผ่าน") }}
+        {% for error in form.password.errors %}
+          <div class="text-danger small">{{ error }}</div>
+        {% endfor %}
+      </div>
+
+      <div class="d-grid mb-3">
+        <button type="submit" class="btn btn-primary">➡️ เข้าสู่ระบบ</button>
+      </div>
+
+      <div class="text-center">
+        <a href="{{ url_for('admin_bp.forgot_password') }}">🔑 ลืมรหัสผ่าน?</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

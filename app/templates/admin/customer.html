@@ -1,0 +1,488 @@
+{% extends 'admin/base.html' %}
+{% block title %}ลูกค้า (Customer){% endblock %}
+{% block content %}
+<style>
+
+    /* กำหนดขนาด switch */
+    .form-check-input.custom-switch {
+        width: 2.5em;
+        height: 1.3em;
+        cursor: pointer;
+    }
+
+    /* สีแดงตอนปิด */
+    .form-check-input.custom-switch:not(:checked) {
+        background-color: #dc3545 !important;
+        border-color: #dc3545 !important;
+    }
+
+    /* สีเขียวตอนเปิด */
+    .form-check-input.custom-switch:checked {
+        background-color: #28a745 !important;
+        border-color: #28a745 !important;
+    }
+
+    .modal-content {
+    background-color: #fff !important;
+    color: #000 !important;
+}
+
+
+</style>
+
+<div class="container mt-4">
+    <h2 class="mb-4 d-flex justify-content-between">
+        ผู้ใช้งาน (Customers)
+        {% if current_user.role in ['SuperAdmin', 'Admin_orange', 'Admin_white'] %}
+        <button class="btn btn-success btn-sm" id="CustomerBtn">+ เพิ่ม Customers</button>
+        {% endif %}
+    </h2>
+
+    <!-- Search box -->
+    <div class="mb-3">
+        <input type="text" id="searchInput" class="form-control" placeholder="ค้นหา... (เว้นวรรคเพื่อค้นหาหลายเงื่อนไข)">
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover align-middle" id="customersTable">
+            <thead class="table-light">
+                <tr>
+                    <th data-col="index">#</th>
+                    <th data-col="first_name">ชื่อ</th>
+                    <th data-col="last_name">นามสกุล</th>
+                    <th data-col="department">หน่วยงาน</th>
+                    <th data-col="license_plate">ทะเบียนรถ</th>
+                    <th data-col="token_id">เบอร์โทรศัพท์</th>
+                    <th data-col="token_id">ประเภทคนขับรถ</th>
+                    <th data-col="token_id">รหัสพนักงาน</th>
+                    <th data-col="is_verified">สถานะ</th>
+                    <th class="text-center">การจัดการ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if customer %}
+                    {% for customer in customer %}
+                    <tr data-id="{{ customer.id }}" class="customer-row {% if customer.is_verified %}table-success text-success{% else %}table-danger text-danger{% endif %}">
+                        <td>{{ loop.index }}</td>
+                        <td>{{ customer.first_name }}</td>
+                        <td>{{ customer.last_name }}</td>
+                        <td>{{ customer.department }}</td>
+                        <td>{{ customer.license_plate }}</td>
+                        <td>{{ customer.phone }}</td>
+                        <td>{{ customer.driver_type }}</td>
+                        <td>{{ customer.employee_id }}</td>
+
+                        <!-- Token ID -->
+                        <!-- <td class="token-cell">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="token-text">{{ customer.token_id or '-' }}</span>
+                                {% if current_user.role in ['SuperAdmin','Admin','admin_orange','admin_white'] %}
+                                <button type="button" class="btn btn-sm btn-warning edit-token-btn">
+                                    {{ 'เพิ่ม Token ID' if not customer.token_id else 'แก้ไข Token ID' }}
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td> -->
+
+                        <!-- Toggle -->
+                        <td class="text-center">
+                            {% if current_user.role in ['SuperAdmin','Admin','Admin_orange','Admin_white'] %}
+                            <div class="form-check form-switch d-inline-block">
+                                <input class="form-check-input verify-toggle custom-switch" type="checkbox" {% if customer.is_verified %}checked{% endif %}>
+                            </div>
+                            {% endif %}
+                        </td>
+
+                        <!-- Manage -->
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-info edit-customer-btn">แก้ไข</button>
+                            <button class="btn btn-sm btn-danger delete-customer-btn">ลบ</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr><td colspan="8" class="text-center text-muted">ไม่มีข้อมูลลูกค้าที่ลงทะเบียน</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+<!-- Modal ทะเบียนซ้ำ -->
+<div class="modal fade" id="licenseDuplicateModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">พบทะเบียนซ้ำ</h5></div>
+      <div class="modal-body">
+        <p class="text-danger">มีผู้ใช้ที่ยืนยันแล้วใช้ทะเบียนเดียวกัน:</p>
+        <div id="duplicateLicenseInfo"></div>
+        <p>คุณต้องการให้ลูกค้าคนใหม่นี้แทนที่ข้อมูลเดิมหรือไม่?</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+        <button class="btn btn-danger" id="replaceLicenseBtn">แทนที่</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Modal -->
+<div class="modal fade" id="addcustomerModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title" id="addcustomerModalTitle">เพิ่มลูกค้า</h5></div>
+      <div class="modal-body">
+        <form id="addcustomerForm">
+          <input type="hidden" id="addcustomerId">
+          <div class="mb-2"><input type="text" id="firstName" class="form-control" placeholder="ชื่อ"></div>
+          <div class="mb-2"><input type="text" id="lastName" class="form-control" placeholder="นามสกุล"></div>
+          <div class="mb-2"><input type="text" id="department" class="form-control" placeholder="หน่วยงาน"></div>
+          <div class="mb-2"><input type="text" id="licensePlate" class="form-control" placeholder="ทะเบียนรถ"></div>
+          <div class="mb-2"><input type="text" id="tokenId" class="form-control" placeholder="Token ID (ถ้ามี)"></div>
+          <div class="mb-2"><input type="text" id="user_id" class="form-control" placeholder="user_id"></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+        <button class="btn btn-primary" id="saveCustomerBtnadd">บันทึก</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="editcustomerModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title" id="editcustomerModalTitle">แก้ไขลูกค้า</h5></div>
+      <div class="modal-body">
+        <form id="editcustomerForm">
+          <input type="hidden" id="editcustomerId">
+          <div class="mb-2"><input type="text" id="firstName" class="form-control" placeholder="ชื่อ"></div>
+          <div class="mb-2"><input type="text" id="lastName" class="form-control" placeholder="นามสกุล"></div>
+          <div class="mb-2"><input type="text" id="department" class="form-control" placeholder="หน่วยงาน"></div>
+          <div class="mb-2"><input type="text" id="licensePlate" class="form-control" placeholder="ทะเบียนรถ"></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+        <button class="btn btn-primary" id="saveCustomerBtnedit">บันทึก</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirm -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">ยืนยันการลบ</h5></div>
+      <div class="modal-body">คุณแน่ใจหรือไม่ว่าต้องการลบลูกค้าคนนี้?</div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+        <button class="btn btn-danger" id="confirmDeleteBtn">ลบ</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal แก้ไข Token -->
+<div class="modal fade" id="tokenModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">แก้ไข Token ID</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="tokenIdInput" class="form-control" placeholder="กรอก Token ID" required>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+        <button type="button" class="btn btn-primary" id="saveTokenBtn">บันทึก</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Verify/Unverify -->
+<div class="modal fade" id="verifyModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">ยืนยันการเปลี่ยนสถานะ</h5>
+      </div>
+      <div class="modal-body" id="verifyModalBody">
+        <!-- ใส่ข้อความแจ้งเตือนผ่าน JS -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancelVerifyBtn" data-bs-dismiss="modal">ยกเลิก</button>
+        <button class="btn btn-primary" id="confirmVerifyBtn">ยืนยัน</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script id="customer-data" type="application/json">
+  {{ customer|default([])|tojson }}
+</script>
+
+<script>
+  const CUSTOMER_DATA = JSON.parse(document.getElementById("customer-data").textContent);
+  console.log(CUSTOMER_DATA);
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+    const addModal = new bootstrap.Modal(document.getElementById("addcustomerModal"));
+    const editModal = new bootstrap.Modal(document.getElementById("editcustomerModal"));
+    const deleteModal = new bootstrap.Modal(document.getElementById("deleteModal"));
+    const tokenModal = new bootstrap.Modal(document.getElementById("tokenModal"));  // 👉 modal token
+    let deleteId = null;
+    let tokenCustomerId = null;
+    let row = null;
+
+    // 👉 ปุ่ม Add Customer
+    document.getElementById("CustomerBtn")?.addEventListener("click", function(){
+        document.getElementById("addcustomerForm").reset();
+        document.getElementById("addcustomerId").value = "";
+        addModal.show();
+    });
+
+    // 👉 ปุ่ม Edit Customer
+    document.querySelectorAll(".edit-customer-btn").forEach(btn=>{
+        btn.addEventListener("click", function(){
+            row = this.closest("tr");
+            document.getElementById("editcustomerId").value = row.dataset.id;
+            document.querySelector("#editcustomerForm #firstName").value = row.children[1].innerText;
+            document.querySelector("#editcustomerForm #lastName").value = row.children[2].innerText;
+            document.querySelector("#editcustomerForm #department").value = row.children[3].innerText;
+            document.querySelector("#editcustomerForm #licensePlate").value = row.children[4].innerText;
+            editModal.show();
+        });
+    });
+
+    // 👉 ปุ่ม เพิ่ม / แก้ไข Token ID
+    document.querySelectorAll(".edit-token-btn, .add-token-btn").forEach(btn=>{
+        btn.addEventListener("click", function(){
+            let row = this.closest("tr");
+            tokenCustomerId = row.dataset.id;
+            let tokenText = row.querySelector(".token-text").innerText;
+            document.getElementById("tokenIdInput").value = tokenText === "-" ? "" : tokenText;
+            tokenModal.show();
+        });
+    });
+
+    // 👉 Save Token
+    document.getElementById("saveTokenBtn").addEventListener("click", function(){
+        let payload = {
+            id: tokenCustomerId,
+            token_id: document.getElementById("tokenIdInput").value
+        };
+        fetch("/admin/customers/update_token", {
+            method:"POST", headers:{"Content-Type":"application/json"},
+            body: JSON.stringify(payload)
+        }).then(r=>r.json()).then(res=>{
+            if(res.status==="success") location.reload();
+            else alert(res.message || "บันทึก Token ID ไม่สำเร็จ");
+        });
+    });
+
+    document.getElementById("saveTokenBtn").addEventListener("click", function () {
+        const tokenInput = document.getElementById("tokenIdInput");
+        const tokenValue = tokenInput.value.trim();
+
+        if (!tokenValue) {
+            // ถ้าเว้นว่าง → แสดง error + focus ที่ช่อง input
+            alert("กรุณากรอก Token ID ก่อน");
+            tokenInput.focus();
+            return;
+        }
+
+        let payload = {
+            id: tokenCustomerId,
+            token_id: document.getElementById("tokenIdInput").value
+        };
+        fetch("/admin/customers/update_token", {
+            method:"POST", headers:{"Content-Type":"application/json"},
+            body: JSON.stringify(payload)
+        }).then(r=>r.json()).then(res=>{
+            if(res.status==="success") location.reload();
+            else alert(res.message || "บันทึก Token ID ไม่สำเร็จ");
+        });
+
+        // ✅ ตัวอย่างถ้าต้องการปิด modal หลังบันทึก
+        const modal = bootstrap.Modal.getInstance(document.getElementById("tokenModal"));
+        modal.hide();
+    });
+
+    // 👉 Save Add Customer
+    document.getElementById("saveCustomerBtnadd").addEventListener("click", function(){
+        let payload = {
+            id: document.getElementById("addcustomerId").value,
+            first_name: document.querySelector("#addcustomerForm #firstName").value,
+            last_name: document.querySelector("#addcustomerForm #lastName").value,
+            department: document.querySelector("#addcustomerForm #department").value,
+            license_plate: document.querySelector("#addcustomerForm #licensePlate").value,
+            token_id: document.querySelector("#addcustomerForm #tokenId").value,
+            user_id: document.querySelector("#addcustomerForm #user_id").value
+        };
+        fetch("/admin/customers/save", {
+            method:"POST", headers:{"Content-Type":"application/json"},
+            body: JSON.stringify(payload)
+        }).then(r=>r.json()).then(res=>{
+            if(res.status==="success") location.reload();
+            else alert(res.message || "บันทึกไม่สำเร็จ");
+        });
+    });
+
+    // 👉 Save Edit Customer
+    document.getElementById("saveCustomerBtnedit").addEventListener("click", function(){
+        let customer_id = document.getElementById("editcustomerId").value;
+        let payload = {
+            customer_id: customer_id,
+            first_name: document.querySelector("#editcustomerForm #firstName").value,
+            last_name: document.querySelector("#editcustomerForm #lastName").value,
+            department: document.querySelector("#editcustomerForm #department").value,
+            license_plate: document.querySelector("#editcustomerForm #licensePlate").value,
+        };
+        fetch(`/admin/customers/save`, {
+            method:"POST", headers:{"Content-Type":"application/json"},
+            body: JSON.stringify(payload)
+        }).then(r=>r.json()).then(res=>{
+            if(res.status==="success") location.reload();
+            else alert(res.message || "บันทึกไม่สำเร็จ");
+        });
+    });    
+
+    // 👉 Delete Customer
+    document.querySelectorAll(".delete-customer-btn").forEach(btn=>{
+        btn.addEventListener("click", function(){
+            deleteId = this.closest("tr").dataset.id;
+            deleteModal.show();
+        });
+    });
+    document.getElementById("confirmDeleteBtn").addEventListener("click", function(){
+        fetch(`/admin/customers/${deleteId}/delete`, {method:"POST"})
+        .then(r=>r.json()).then(res=>{
+            if(res.status==="success") location.reload();
+            else alert("ลบไม่สำเร็จ");
+        });
+    });
+
+    // 👉 Search filter
+    document.getElementById("searchInput").addEventListener("input", function(){
+        let terms = this.value.toLowerCase().split(" ").filter(x=>x);
+        document.querySelectorAll("#customersTable tbody tr").forEach(tr=>{
+            let text = tr.innerText.toLowerCase();
+            let match = terms.every(t=>text.includes(t));
+            tr.style.display = match ? "" : "none";
+        });
+    });
+
+    // 👉 Sort
+    document.querySelectorAll("#customersTable th[data-col]").forEach(th=>{
+        th.style.cursor = "pointer";
+        th.addEventListener("click", function(){
+            let tbody = document.querySelector("#customersTable tbody");
+            let rows = Array.from(tbody.querySelectorAll("tr")).filter(r=>r.style.display!=="none");
+            let colIndex = th.cellIndex;
+            let asc = th.dataset.asc === "true" ? false : true;
+            th.dataset.asc = asc;
+            rows.sort((a,b)=>{
+                let A = a.cells[colIndex].innerText.trim();
+                let B = b.cells[colIndex].innerText.trim();
+                if(!isNaN(A) && !isNaN(B)){ return asc ? A-B : B-A; }
+                return asc ? A.localeCompare(B) : B.localeCompare(A);
+            });
+            tbody.innerHTML = "";
+            rows.forEach(r=>tbody.appendChild(r));
+        });
+    });
+
+    // Toggle Verify/Unverify
+    let targetCheckbox = null;  // เก็บ checkbox ที่ถูกกด
+    let targetCustomerId = null; 
+    let newStatus = null;
+
+    // เมื่อมีการกด toggle checkbox
+    document.querySelectorAll(".verify-toggle").forEach(chk => {
+        chk.addEventListener("change", function (e) {
+            e.preventDefault();
+            targetCheckbox = this;
+            targetCustomerId = this.closest("tr").dataset.id;
+            newStatus = this.checked;
+
+            // แก้ไขข้อความใน modal
+            const text = newStatus 
+                ? "คุณต้องการยืนยันการใช้งานหรือไม่?" 
+                : "คุณต้องการยกเลิกการใช้งานหรือไม่?";
+            document.getElementById("verifyModalBody").innerText = text;
+
+            // เปิด modal
+            const verifyModal = new bootstrap.Modal(document.getElementById("verifyModal"));
+            verifyModal.show();
+        });
+    });
+
+    // ปุ่มยืนยัน
+    document.getElementById("confirmVerifyBtn").addEventListener("click", function () {
+        if (!targetCustomerId) return;
+        let userId = CUSTOMER_DATA.find(c => c.id == targetCustomerId).user_id;
+        let tokenId = CUSTOMER_DATA.find(c => c.id == targetCustomerId).token_id;
+        let license_plate = CUSTOMER_DATA.find(c => c.id == targetCustomerId).license_plate;
+
+        fetch(`/admin/customers/${targetCustomerId}/verify`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ 
+              user_id: userId,
+              token_id: tokenId,
+              license_plate: license_plate,
+              is_verified: newStatus,
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                // อัปเดตสีแถว
+                const row = document.querySelector(`tr[data-id="${targetCustomerId}"]`);
+                if (newStatus) {
+                    row.classList.remove("table-danger", "text-danger");
+                    row.classList.add("table-success", "text-success");
+                } else {
+                    row.classList.remove("table-success", "text-success");
+                    row.classList.add("table-danger", "text-danger");
+                }
+            } else {
+                // ถ้า error → ยกเลิกการเปลี่ยน checkbox
+                targetCheckbox.checked = !newStatus;
+                alert("ไม่สามารถอัปเดตข้อมูลได้");
+            }
+        window.location.reload();
+        })
+        .catch(err => {
+            console.error(err);
+            targetCheckbox.checked = !newStatus;
+            alert("เกิดข้อผิดพลาด");
+        });
+
+        // ปิด modal
+        bootstrap.Modal.getInstance(document.getElementById("verifyModal")).hide();
+    });
+
+    // ปุ่มยกเลิก → คืนค่ากลับ
+    document.getElementById("cancelVerifyBtn").addEventListener("click", function () {
+        if (targetCheckbox) {
+            targetCheckbox.checked = !newStatus;
+        }
+    });
+});
+</script>
+
+
+
+{% endblock %}

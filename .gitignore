@@ -1,0 +1,53 @@
+# --- Sensitive / Environment ---
+.env
+.env.local
+.env.*.local
+
+# --- Google / OAuth Credentials ---
+client_secret*.json
+credentials.json
+token.json
+
+# --- Database ---
+*.sqlite3
+*.db
+instance/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+
+# --- Virtual Environment ---
+venv/
+.venv/
+env/
+ENV/
+
+# --- IDE ---
+.vscode/
+.idea/
+*.code-workspace
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Logs ---
+*.log
+logs/
+
+# --- Build / Dist ---
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# --- Testing ---
+.pytest_cache/
+htmlcov/
+.coverage

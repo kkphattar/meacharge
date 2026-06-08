@@ -1,0 +1,84 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}เพิ่มผู้ใช้ใหม่{% endblock %}
+
+{% block content %}
+<h3 class="mb-4">➕ เพิ่มผู้ดูแลระบบ</h3>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<form method="POST" class="row g-3">
+    <div class="col-md-6">
+        <label class="form-label">ชื่อผู้ใช้ (Username)</label>
+        <input type="text" name="username" class="form-control" required>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">อีเมล</label>
+        <input type="email" name="email" class="form-control" required>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">ชื่อ</label>
+        <input type="text" name="first_name" class="form-control" required>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">นามสกุล</label>
+        <input type="text" name="last_name" class="form-control" required>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">รหัสพนักงาน</label>
+        <input type="text" name="mea_id" class="form-control" required>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">เบอร์โทรศัพท์</label>
+        <input type="text" name="phone" class="form-control" required>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">หน่วยงาน</label>
+        <select name="departments" class="form-select select2" required>
+            <option value="ฝวจ">ฝวจ</option>
+            <option value="ฝวฟ">ฝวฟ</option>
+            <option value="ฟขต">ฟขต</option>
+        </select>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">รหัสผ่าน</label>
+        <input type="password" name="password" class="form-control" required>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">ยืนยันรหัสผ่าน</label>
+        <input type="password" name="confirm_password" class="form-control" required>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">สิทธิ์</label>
+        <select name="role" class="form-select" required>
+            <option value="Admin">Admin</option>
+            <option value="SuperAdmin">SuperAdmin</option>
+            <option value="Admin_orange">Admin_orange</option>
+            <option value="Admin_white">Admin_white</option>
+            <option value="Guest">Guest</option>
+        </select>
+    </div>
+    <div class="col-12">
+        <button type="submit" class="btn btn-success">✅ บันทึก</button>
+        <a href="{{ url_for('admin_bp.dashboard') }}" class="btn btn-secondary">↩️ กลับ</a>
+    </div>
+</form>
+
+<!-- เพิ่ม Select2 -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        $('.select2').select2({
+            placeholder: "เลือกหน่วยงาน",
+            allowClear: true
+        });
+    });
+</script>
+{% endblock %}

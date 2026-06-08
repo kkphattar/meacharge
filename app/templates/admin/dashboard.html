@@ -1,0 +1,81 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Admin Users{% endblock %}
+
+{% block content %}
+
+{% if current_user.role in ['Admin_orange', 'Admin_white'] %}
+<div class="alert alert-warning">
+    ข้อจำกัด: คุณไม่มีสิทธิ์ในการดูและแก้ไขผู้ใช้
+</div>
+{% else %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">🛠 ผู้ดูแลระบบ (Admin Users)</h3>
+    <a href="{{ url_for('admin_bp.add_user') }}" class="btn btn-primary">➕ เพิ่มผู้ใช้</a>
+</div>
+
+{% if users %}
+<div class="table-responsive">
+    <table class="table table-bordered table-hover align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>#</th>
+                <th>User</th>
+                <th>ชื่อ</th>
+                <th>นามสกุล</th>
+                <th>อีเมล</th>
+                <th>สิทธิ์</th>
+                {% if current_user.role == 'SuperAdmin' %}
+                    <th>การจัดการ</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ user.username }}</td>
+                <td>{{ user.first_name }}</td>
+                <td>{{ user.last_name }}</td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.role }}</td>
+            {% if current_user.role == 'SuperAdmin' %}
+            <td>
+                <a href="{{ url_for('admin_bp.edit_user', user_id=user.id) }}" class="btn btn-sm btn-primary">✏️ แก้ไข</a>
+
+                <!-- 🔴 ปุ่มลบที่เรียก Modal -->
+                <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal{{ user.id }}">
+                🗑️ ลบ
+                </button>
+
+                <!-- 🧩 Modal ยืนยันการลบ -->
+                <div class="modal fade" id="confirmDeleteModal{{ user.id }}" tabindex="-1" aria-labelledby="modalLabel{{ user.id }}" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title" id="modalLabel{{ user.id }}">⚠️ ยืนยันการลบ</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        คุณแน่ใจหรือไม่ว่าต้องการลบผู้ใช้ <strong>{{ user.username }}</strong>?
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                        <a href="{{ url_for('admin_bp.delete_user', user_id=user.id) }}" class="btn btn-danger">ลบ</a>
+                    </div>
+                    </div>
+                </div>
+                </div>
+            </td>
+            {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">ยังไม่มีผู้ใช้งานในระบบ</div>
+{% endif %}
+{% endif %}
+{% endblock %}

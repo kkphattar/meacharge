@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>ยืนยันอีเมล</title>
+</head>
+<body style="font-family:sans-serif; padding:20px;">
+  <div style="max-width:600px; margin:auto; padding:20px; background:#fff; border-radius:8px; box-shadow:0 0 10px rgba(0,0,0,0.1);">
+    <h2>เรียนคุณ {{ name }}</h2>
+    <p>คุณได้ทำการลงทะเบียน กรุณาคลิกลิงก์ด้านล่างเพื่อยืนยันตัวตน:</p>
+    <p style="margin:30px 0;">
+      <a href="https://yourapp.com/verify?code={{ code }}" style="padding:12px 24px; background:#28a745; color:white; text-decoration:none; border-radius:5px;">
+        ยืนยันการลงทะเบียน
+      </a>
+    </p>
+    <p style="font-size:0.9em; color:#888;">หากคุณไม่ได้ลงทะเบียน กรุณาเพิกเฉยอีเมลนี้</p>
+  </div>
+</body>
+</html>

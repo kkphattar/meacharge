@@ -1,0 +1,920 @@
+{# templates/customer_home.html #}
+
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EV Charging Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.0/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-orange: #ff6b35;
+            --accent-orange: #ff8c42;
+            --warm-orange: #ff7849;
+            --deep-orange: #e55039;
+            --light-orange: #ffa726;
+            --info-blue: #17a2b8;
+            --success-green: #28a745;
+            --danger-red: #dc3545;
+            --dark-bg: #1a1a1a;
+            --card-bg: #2d2d2d;
+            --secondary-bg: #3a3a3a;
+            --text-primary: #ffffff;
+            --text-secondary: #e0e0e0;
+            --text-muted: #b0b0b0;
+            --border-color: rgba(255, 107, 53, 0.2);
+        }
+
+        body { 
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); 
+            min-height: 100vh;
+        }
+
+        .card-modern {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+            border-color: rgba(255, 107, 53, 0.3);
+        }
+
+        .user-card {
+            background: linear-gradient(135deg, var(--card-bg) 0%, var(--secondary-bg) 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .user-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-orange), var(--accent-orange));
+        }
+
+        .user-avatar {
+            border: 3px solid var(--primary-orange);
+            box-shadow: 0 0 20px rgba(255, 107, 53, 0.4);
+        }
+
+        .balance-card {
+            background: linear-gradient(135deg, var(--primary-orange) 0%, var(--warm-orange) 100%);
+            border: none;
+            position: relative;
+            overflow: hidden;
+            color: var(--text-primary);
+        }
+
+        .balance-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100px;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+        }
+
+        /* Charging Status Styles */
+        .charging-dashboard {
+            background: linear-gradient(135deg, var(--dark-bg) 0%, #2d2d2d 100%);
+            border: 1px solid var(--primary-orange);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .charging-dashboard::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-orange) 0%, var(--accent-orange) 50%, var(--primary-orange) 100%);
+            animation: charging-flow 2s linear infinite;
+        }
+
+        @keyframes charging-flow {
+            0% { background-position: -100% 0; }
+            100% { background-position: 100% 0; }
+        }
+
+        .charging-title {
+            color: var(--accent-orange);
+            text-shadow: 0 0 10px rgba(255, 140, 66, 0.4);
+            font-weight: 700;
+        }
+
+        .charging-status-badge {
+            background: rgba(255, 107, 53, 0.2);
+            border: 1px solid var(--accent-orange);
+            border-radius: 20px;
+            padding: 0.5rem 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .charging-icon {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        .metric-card {
+            background: linear-gradient(145deg, var(--secondary-bg) 0%, #454545 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--primary-orange);
+            box-shadow: 0 8px 25px rgba(255, 107, 53, 0.25);
+        }
+
+        .metric-icon {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .power-card .metric-icon { color: var(--danger-red); }
+        .current-card .metric-icon { color: var(--light-orange); }
+        .energy-card .metric-icon { color: var(--info-blue); }
+        .time-card .metric-icon { color: var(--accent-orange); }
+
+        .metric-value {
+            font-family: 'SF Mono', Monaco, monospace;
+            font-weight: 700;
+            font-size: 1.75rem;
+            color: var(--text-primary);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .metric-label {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* History Table Styles */
+        .history-header {
+            background: linear-gradient(135deg, var(--primary-orange) 0%, var(--accent-orange) 100%);
+            border-radius: 12px 12px 0 0;
+            padding: 1rem 1.5rem;
+            margin: -1rem -1rem 1rem -1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .history-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -30%;
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(180deg); }
+        }
+
+        .history-title {
+            color: white;
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin: 0;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .table-container {
+            border-radius: 12px;
+            overflow: hidden;
+            background: var(--secondary-bg);
+            border: 1px solid var(--border-color);
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary-orange) var(--card-bg);
+        }
+
+        .table-container::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, var(--primary-orange), var(--accent-orange));
+            border-radius: 10px;
+        }
+
+        .table-container::-webkit-scrollbar-track {
+            background: var(--card-bg);
+            border-radius: 10px;
+        }
+
+        .table-dark {
+            --bs-table-bg: transparent;
+            --bs-table-striped-bg: rgba(255, 107, 53, 0.08);
+            --bs-table-hover-bg: rgba(255, 107, 53, 0.15);
+            --bs-table-border-color: rgba(255, 107, 53, 0.2);
+            margin-bottom: 0;
+        }
+
+        .table-dark thead th {
+            background: linear-gradient(135deg, var(--secondary-bg) 0%, #404040 100%) !important;
+            border-bottom: 2px solid var(--primary-orange);
+            padding: 1rem 0.75rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: var(--accent-orange) !important;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .table-dark tbody td {
+            padding: 1rem 0.75rem;
+            border-top: 1px solid rgba(255, 107, 53, 0.15);
+            color: var(--text-secondary);
+            vertical-align: middle;
+            font-size: 0.9rem;
+        }
+
+        .history-row {
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .history-row:hover {
+            background: rgba(255, 107, 53, 0.12) !important;
+            transform: scale(1.01);
+            box-shadow: 0 4px 15px rgba(255, 107, 53, 0.2);
+        }
+
+        .history-row:hover::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(135deg, var(--primary-orange), var(--accent-orange));
+            border-radius: 0 4px 4px 0;
+        }
+
+        .charger-code {
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 0.85rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--card-bg), var(--secondary-bg));
+            border: 1px solid var(--primary-orange);
+            border-radius: 6px;
+            padding: 0.3rem 0.6rem;
+            color: var(--accent-orange);
+            display: inline-block;
+            box-shadow: 0 2px 8px rgba(255, 107, 53, 0.2);
+        }
+
+        .connector-badge {
+            background: linear-gradient(135deg, var(--info-blue), #20c997);
+            color: white;
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            border: none;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 2px 8px rgba(23, 162, 184, 0.3);
+        }
+
+        .energy-value {
+            font-family: 'SF Mono', Monaco, monospace;
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--success-green);
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        .energy-unit {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-left: 0.2rem;
+        }
+
+        .datetime-text {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .date-part {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            display: block;
+        }
+
+        .time-part {
+            color: var(--accent-orange);
+            font-weight: 600;
+        }
+
+        /* Empty state */
+        .empty-state {
+            background: linear-gradient(135deg, var(--card-bg) 0%, var(--secondary-bg) 100%);
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            padding: 3rem 1.5rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .empty-state::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(255, 107, 53, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: pulse-slow 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse-slow {
+            0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.3; }
+            50% { transform: scale(1.1) rotate(180deg); opacity: 0.1; }
+        }
+
+        .empty-icon {
+            font-size: 4rem;
+            color: var(--text-muted);
+            opacity: 0.6;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .empty-message {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-submessage {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        /* Menu Icons */
+        .menu-card {
+            background: var(--card-bg);
+        }
+
+        .menu-item {
+            transition: all 0.3s ease;
+            border-radius: 12px;
+            padding: 1rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        .menu-item:hover {
+            background: rgba(255, 107, 53, 0.15);
+            transform: translateY(-2px);
+            color: var(--text-primary);
+        }
+
+        .menu-item.active {
+            background: linear-gradient(135deg, var(--primary-orange), var(--accent-orange));
+            color: white !important;
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(255, 107, 53, 0.4);
+        }
+
+        .menu-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .menu-item.active .menu-icon {
+            transform: scale(1.1);
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+        }
+
+        /* Alert Styles */
+        .alert-modern {
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(255, 107, 53, 0.15) 0%, rgba(255, 107, 53, 0.05) 100%);
+            border-left: 4px solid var(--primary-orange);
+            box-shadow: 0 4px 15px rgba(255, 107, 53, 0.2);
+            color: var(--text-primary);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .metric-value { font-size: 1.4rem; }
+            .menu-icon { font-size: 2rem; }
+            
+            .table-container {
+                font-size: 0.85rem;
+            }
+            
+            .table-dark thead th {
+                padding: 0.75rem 0.5rem;
+                font-size: 0.75rem;
+            }
+            
+            .table-dark tbody td {
+                padding: 0.75rem 0.5rem;
+                font-size: 0.8rem;
+            }
+            
+            .charger-code {
+                font-size: 0.75rem;
+                padding: 0.2rem 0.4rem;
+            }
+            
+            .connector-badge {
+                font-size: 0.7rem;
+                padding: 0.2rem 0.6rem;
+            }
+            
+            .energy-value {
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .card-modern { border-radius: 12px; }
+            .metric-card { padding: 1rem; }
+            .menu-item { padding: 0.75rem; }
+            .history-header { padding: 0.75rem 1rem; }
+            
+            .table-container {
+                overflow-x: auto;
+            }
+            
+            .empty-state {
+                padding: 2rem 1rem;
+            }
+            
+            .empty-icon {
+                font-size: 3rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app" class="container py-4 text-light">
+        <!-- แจ้งเตือนสถานะ -->
+         {% if not customer.is_verified %}
+        <div class="alert alert-warning alert-modern text-center mb-4">
+        <!-- <div v-if="{{ 'true' if customer.is_verified else 'true' }}" class="alert alert-warning alert-modern text-center mb-4"> -->
+        <!-- <div v-if="!verified" class="alert alert-warning alert-modern text-center mb-4"> -->
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            อยู่ระหว่างรอการตรวจสอบข้อมูลจากผู้ดูแลระบบ
+        </div>
+        {% else %}
+        
+        <div class="row g-3">
+            <div id="data" data-charging="{{ charging_session|tojson }}"></div>
+
+            <!-- ข้อมูลผู้ใช้ -->
+            <div class="card-modern user-card p-4 mb-3">
+                <div class="d-flex align-items-center justify-content-between flex-wrap">
+                    <div class="d-flex align-items-center">
+                        <img src="{{ picture_url }}" alt="avatar" 
+                            class="rounded-circle user-avatar" width="70" height="70" />
+                        <div class="ms-3">
+                            <h5 class="mb-1 fw-bold text-white">{{ customer.first_name }} {{ customer.last_name }}</h5>
+                            <p class="mb-1 text-light">
+                                <i class="bi bi-diagram-3 me-1"></i>
+                                {{ customer.department }}
+                            </p>
+                            <p class="mb-1 text-light">
+                                <i class="bi bi-people me-1"></i>
+                                {{ customer.driver_type }}
+                            </p>
+                            
+                            {% if charging_session %}
+                            <p class="mb-0 text-light">
+                                <i class="bi bi-car-front me-1"></i>
+                                {{ charging_data.selected_plate }}
+                            </p>
+                            {% else %}
+                            <!-- เปลี่ยนจากข้อความทะเบียนรถ เป็น dropdown -->
+                            <div class="d-flex align-items-center text-light">
+                                <i class="bi bi-car-front me-1"></i>
+                                <select v-model="selectedPlate" class="form-select form-select-sm bg-dark text-light border-secondary" style="width:auto;">
+                                    <option disabled value="">-- เลือกทะเบียนรถ --</option>
+                                    {% for plate in license_list %}
+                                        <option value="{{ plate }}">{{ plate }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- ปุ่มตั้งค่าแบบ dropdown -->
+                    {% if not charging_session %}
+                    <div class="dropdown text-end mt-3 mt-md-0">
+                        <button class="btn btn-outline-light btn-sm rounded-pill dropdown-toggle" type="button" id="settingsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-gear me-1"></i> ตั้งค่า
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="settingsDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('line_bp.edit_profile') }}">
+                                <i class="bi bi-plus-circle me-2"></i>แก้ไขข้อมูลทะเบียนรถ
+                            </a></li>
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            <!-- ยอดเงิน -->
+            <!-- <div class="card-modern balance-card p-3 mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-wallet2 me-2" style="font-size: 1.5rem;"></i>
+                        <span class="fw-medium">เงินคงเหลือ</span>
+                    </div>
+                    <div class="text-end">
+                        <strong class="fs-4 fw-bold">{{ balance or '0.00' }} บาท</strong>
+                        <i class="bi bi-info-circle ms-1" data-bs-toggle="tooltip" title="ยอดเงินปัจจุบัน"></i>
+                    </div>
+                </div>
+            </div> -->
+
+            <!-- สถานะการชาร์จ -->
+            {% if charging_session %}
+            <div class="card-modern charging-dashboard p-4 mb-3">
+                <div class="text-center mb-4">
+                    <h5 class="charging-title mb-3">
+                        <i class="bi bi-lightning-charge me-2"></i>
+                        สถานะการชาร์จ
+                    </h5>
+                    <div class="charging-status-badge">
+                        <i class="bi bi-lightning-charge-fill charging-icon text-warning"></i>
+                        <span class="text-white fw-medium">กำลังชาร์จอยู่</span>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-6 col-lg-3">
+                        <div class="metric-card power-card p-3 text-center">
+                            <i class="bi bi-speedometer2 metric-icon"></i>
+                            <div class="metric-label">กำลังไฟฟ้า</div>
+                            <div class="metric-value" id="power">--</div>
+                            <small class="text-light">kW</small>
+                        </div>
+                    </div>
+
+                    <div class="col-6 col-lg-3">
+                        <div class="metric-card current-card p-3 text-center">
+                            <i class="bi bi-activity metric-icon"></i>
+                            <div class="metric-label">กระแสไฟฟ้า</div>
+                            <div class="metric-value" id="current">--</div>
+                            <small class="text-light">A</small>
+                        </div>
+                    </div>
+
+                    <div class="col-6 col-lg-3">
+                        <div class="metric-card energy-card p-3 text-center">
+                            <i class="bi bi-battery-charging metric-icon"></i>
+                            <div class="metric-label">พลังงานไฟฟ้า</div>
+                            <div class="metric-value" id="energy">--</div>
+                            <small class="text-light">หน่วย</small>
+                        </div>
+                    </div>
+
+                    <div class="col-6 col-lg-3">
+                        <div class="metric-card time-card p-3 text-center">
+                            <i class="bi bi-stopwatch metric-icon"></i>
+                            <div class="metric-label">เวลาที่ชาร์จ</div>
+                            <div class="metric-value" id="charging-time">00:00:00</div>
+                            <small class="text-light">HH:MM:SS</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+
+            <!-- ปุ่มเมนูไอคอน -->
+            <div class="card-modern menu-card p-4">
+                <div class="row g-3 text-center">
+                    <div class="col-4">
+                        <!-- <div class="menu-item">
+                            <i class="bi bi-plus-circle menu-icon text-info"></i>
+                            <div class="small fw-medium">การเติมเงิน</div>
+                        </div> -->
+                    </div>
+
+                    {% if not charging_session %}
+                    <!-- <div class="col-4">
+                        <a href="{{ url_for('line_bp.scan_page') }}?plate=${encodeURIComponent(this.selectedPlate)}" class="text-decoration-none">
+                            <div class="menu-item active">
+                                <i class="bi bi-qr-code-scan menu-icon"></i>
+                                <div class="fw-bold">สแกนคิวอาร์โค้ด</div>
+                            </div>
+                        </a>
+                    </div> -->
+                    <div class="col-4">
+                        <a href="#" @click="goScanPage" class="text-decoration-none">
+                            <div class="menu-item active">
+                            <i class="bi bi-qr-code-scan menu-icon"></i>
+                            <div class="fw-bold">สแกนคิวอาร์โค้ด</div>
+                            </div>
+                        </a>
+                    </div>
+                    <!-- <div class="col-4">
+                    <a :href="`{{ url_for('line_bp.scan_page') }}?plate=${encodeURIComponent(selectedPlate)}`"
+                        class="text-decoration-none"
+                        @click.prevent="!selectedPlate && alert('กรุณาเลือกทะเบียนรถก่อนสแกนคิวอาร์โค้ด')">
+                        <div class="menu-item active">
+                        <i class="bi bi-qr-code-scan menu-icon"></i>
+                        <div class="fw-bold">สแกนคิวอาร์โค้ด</div>
+                        </div>
+                    </a>
+                    </div> -->
+                    {% else %}
+                    <div class="col-4">
+                        <a href="#" onclick="stopCharge()" class="text-decoration-none">
+                            <div class="menu-item active">
+                                <i class="bi bi-stop-circle menu-icon"></i>
+                                <div class="fw-bold">หยุดชาร์จ</div>
+                            </div>
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    <div class="col-4">
+                        <!-- <div class="menu-item">
+                            <i class="bi bi-geo-alt menu-icon text-success"></i>
+                            <div class="small fw-medium">แผนที่</div>
+                        </div> -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- ประวัติการชาร์จ -->
+            <div class="card-modern p-4 mb-3">
+                <div class="history-header">
+                    <h6 class="history-title mb-0">
+                        <i class="bi bi-clock-history me-2"></i>
+                        ประวัติการชาร์จ
+                    </h6>
+                </div>
+                
+                {% if charginghistory %}
+                <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                    <table class="table table-dark table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th scope="col" class="border-0">
+                                    <i class="bi bi-calendar3 me-1"></i>วันที่-เวลา
+                                </th>
+                                <th scope="col" class="border-0">
+                                    <i class="bi bi-car-front me-1"></i>ทะเบียนรถ
+                                </th>
+                                <th scope="col" class="border-0">
+                                    <i class="bi bi-lightning me-1"></i>เครื่องชาร์จ
+                                </th>
+                                <th scope="col" class="border-0 text-center">
+                                    <i class="bi bi-plug me-1"></i>หัวชาร์จ
+                                </th>
+                                <th scope="col" class="border-0 text-center">
+                                    <i class="bi bi-battery me-1"></i>พลังงาน
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for charginghistory in charginghistory %}
+                            <tr class="history-row">
+                                <td>
+                                    <div class="datetime-text">
+                                        {% if charginghistory.start_time %}
+                                            <span class="date-part">{{ charginghistory.start_time.strftime('%d/%m/%Y') }}</span>  
+                                            <span class="time-part">{{ charginghistory.start_time.strftime('%H:%M') }}</span>
+                                            
+                                        {% else %}
+                                            <span class="date-part">--/--/----</span>
+                                            <span class="time-part">--:--</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="charger-code">
+                                        {{ charginghistory.selected_plate or '--' }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="charger-code">
+                                        {{ charginghistory.charge_point_id or '--' }}
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <span class="connector-badge">
+                                        {{ charginghistory.connector_id or '-' }}
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="energy-value">
+                                        {% if charginghistory.energy_used %}
+                                            {{ "%.2f"|format(charginghistory.energy_used) }}
+                                        {% else %}
+                                            0.00
+                                        {% endif %}
+                                        <span class="energy-unit">kWh</span>
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <!-- Empty State -->
+                <div class="empty-state">
+                    <i class="bi bi-clock-history empty-icon"></i>
+                    <div class="empty-message">ไม่พบข้อมูลเครื่องชาร์จ</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+
+    <script>
+    const { createApp } = Vue;
+    var charging_session = JSON.parse(document.getElementById('data').dataset.charging);
+    let startTime = null;
+    let timerStarted = false;  // <-- ตัวแปรควบคุมการเริ่มนับเวลา
+
+    function parseStartTime(isoString) {
+      return new Date(isoString);
+    }
+
+    createApp({
+      data() {
+        return {
+        // verified: true,
+          customer: {},
+          credit: 0,
+          charge_history: [],
+          qrData: {},
+          serverMsg: '',
+          selectedPlate: "",
+        }
+      },
+
+      methods: {
+        async loadData() {
+          try {
+            const res = await fetch('/api/customer_info');
+            const data = await res.json();
+            this.verified = true;
+            this.credit = data.data.credit || 0;
+            this.charge_history = data.data.charge_history || [];
+          } catch (e) {
+            console.error(e);
+          }
+        },
+
+        async clearScan() {
+          try {
+            await fetch('/clear_scan', { method: 'POST' });
+            this.qrData = null;
+            this.serverMsg = '';
+          } catch (e) {
+            console.error(e);
+          }
+        },
+        goScanPage() {
+            if (!this.selectedPlate) {
+            alert("กรุณาเลือกทะเบียนรถก่อนสแกนคิวอาร์โค้ด");
+            return;
+            }
+            // สร้าง URL แล้วเปลี่ยนหน้าไป
+            const baseUrl = "{{ url_for('line_bp.scan_page') }}";
+            window.location.href = `${baseUrl}?plate=${encodeURIComponent(this.selectedPlate)}`;
+        }
+      },
+
+      mounted() {
+        this.loadData();
+        pollStatus(); // เรียกใช้ polling เมื่อโหลดเสร็จ
+      },
+    }).mount('#app');
+
+    async function stopCharge() {
+      if (confirm("คุณแน่ใจหรือไม่ว่าต้องการหยุดชาร์จ?")) {
+        const res = await fetch('{{ url_for("api.remotestop") }}');
+        const result = await res.json();
+        if (result.response.code === 200) {
+          alert("หยุดชาร์จสำเร็จ");
+        } else {
+          alert(result.response.messages);
+        }
+        window.location.href = '/home';
+      }
+    }
+
+    async function status() {
+      if (charging_session){
+        
+        try {
+          const res = await fetch("/api/energyUsage");
+          const result = await res.json();
+            if (result.response.result.complete === true) {
+                alert("การชาร์จเสร็จสิ้น");
+                window.location.href = '/home';
+                }
+
+          const r = result.response.result;
+          r.kWh = r.kWh - r. meter_start_kW
+          if (r.kWh < 0) r.kWh = 0; // ป้องกันค่าลบ
+
+          // Update ค่าใน DOM
+          document.getElementById("power").innerText = r.kW?.toFixed(2) ?? "--";
+          document.getElementById("current").innerText = r.amp?.toFixed(2) ?? "--";
+          document.getElementById("energy").innerText = r.kWh?.toFixed(2) ?? "--";
+
+          // เซ็ต startTime ครั้งแรก
+          if (!startTime && r.start_time) {
+            startTime = parseStartTime(r.start_time);
+          }
+
+          // เริ่มจับเวลาเมื่อพร้อม
+          if (startTime && !timerStarted) {
+            startTimer();
+            timerStarted = true;
+          }
+
+        } catch (err) {
+          console.error("เกิดข้อผิดพลาด:", err);
+        }
+
+      }else {
+          return;
+      }
+    }
+
+    function startTimer() {
+      setInterval(() => {
+        if (!startTime) return;
+
+        const now = new Date();
+        const elapsed = Math.floor((now - startTime) / 1000); // วินาที
+        const hours = String(Math.floor(elapsed / 3600)).padStart(2, '0');
+        const minutes = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
+        const seconds = String(elapsed % 60).padStart(2, '0');
+
+        document.getElementById('charging-time').innerText = `${hours}:${minutes}:${seconds}`;
+      }, 1000);
+    }
+
+    // ใช้ฟังก์ชันนี้เริ่ม status loop
+    function pollStatus() {
+      status();                 // โหลดทันที
+      setInterval(status, 60000);  // โหลดซ้ำทุก 1 นาที
+    }
+    </script>
+  </div>
+</div>
+</body>
+</html>
