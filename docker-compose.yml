@@ -1,0 +1,23 @@
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+
+  web:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    environment:
+      REDIS_HOST: redis
+    depends_on:
+      - redis
+    volumes:
+      - ./instance:/app/instance
+
+volumes:
+  redis_data:

@@ -1,0 +1,11 @@
+services:
+  web:
+    command: python run.py
+    volumes:
+      - .:/app
+    ports:
+      - "5678:5678"
+    environment:
+      FLASK_DEBUG: "1"
+      FLASK_ENV: development
+      DEBUGPY_ENABLE: "0"

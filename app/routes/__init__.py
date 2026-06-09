@@ -1,1 +1,1 @@
-from app.routes.admin import mail, admin_bp, delete_session
+from app.routes.admin import delete_session

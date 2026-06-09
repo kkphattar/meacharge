@@ -4,23 +4,21 @@ from app.models import AdminUser, CustomerUser, ChargeHistory, AdminLog, db
 import csv
 import io
 import os
-from datetime import datetime, timezone
+from datetime import datetime
 import random, string
 import re  # ใช้สำหรับตรวจสอบ email
-from flask_mail import Mail, Message
+from flask_mail import Message
 from flask_login import login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from .forms import LoginForm
 from app.decorators import role_required
 from sqlalchemy.exc import IntegrityError
-from app.extensions import csrf
+from app.extensions import csrf, limiter, mail
 import redis
 import msgpack
 
-from app.extensions import limiter
 admin_bp = Blueprint('admin_bp', __name__, url_prefix='/admin')
-mail = Mail()
-r = redis.StrictRedis(host="localhost", port=6379, db=0)
+r = redis.StrictRedis(host=os.getenv('REDIS_HOST', 'localhost'), port=6379, db=0)
 
 
 def log_action(action, detail='', username=None, admin_id=None, role=None):

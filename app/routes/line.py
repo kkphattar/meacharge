@@ -2,7 +2,8 @@
 from flask import Blueprint, request, session, redirect, render_template, url_for, flash, jsonify
 import requests
 from app.models import db, CustomerUser, ChargeHistory
-from app.routes import mail, delete_session
+from app.extensions import mail
+from app.routes import delete_session
 from flask_mail import Message
 import os
 import re
@@ -16,7 +17,7 @@ import pytz
 from datetime import datetime, timedelta
 
 line_bp = Blueprint('line_bp', __name__)
-r = redis.StrictRedis(host="localhost", port=6379, db=0)
+r = redis.StrictRedis(host=os.getenv('REDIS_HOST', 'localhost'), port=6379, db=0)
 
 web_url = os.getenv('web_url')
 channel_id = os.getenv('channel_id')
@@ -239,7 +240,7 @@ def register():
     try:
         mail.send(msg)
     except Exception as e:
-        return f"ไม่ได้แจ้งผู้ดูแลระบบ: {e}"
+        print(f"[register] Email error: {e}")
 
     return jsonify({"status": "ok"})
 
@@ -651,3 +652,4 @@ def edit_profile():
         driver_type=driver_type,
         department_list=department_list
         )
+
