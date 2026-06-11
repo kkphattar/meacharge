@@ -1,0 +1,188 @@
+{% extends 'admin/base.html' %}
+{% block title %}จัดการ Email แจ้งเตือน{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-3">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0"><i class="bi bi-envelope-at me-2 text-warning"></i>จัดการ Email แจ้งเตือนผู้ดูแล</h4>
+    </div>
+
+    <!-- ฟอร์มเพิ่ม email ใหม่ -->
+    <div class="mb-4 p-3" style="background:rgba(255,107,53,0.08); border:1px solid rgba(255,107,53,0.2); border-radius:8px;">
+        <h6 class="mb-3 text-warning"><i class="bi bi-plus-circle me-2"></i>เพิ่ม Email ใหม่</h6>
+        <form method="POST" action="{{ url_for('admin_bp.notify_email_add') }}" class="row g-2">
+            <div class="col-md-4">
+                <label class="form-label text-white small mb-1">ประเภทผู้ขับรถ</label>
+                <select name="driver_type" class="form-select form-select-sm" required>
+                    <option value="">-- เลือกประเภท --</option>
+                    {% for dt in driver_types %}
+                    <option value="{{ dt }}">{{ dt }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label text-white small mb-1">Email</label>
+                <input type="email" name="email" class="form-control form-control-sm"
+                    placeholder="example@mea.or.th" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label text-white small mb-1">ชื่อ - นามสกุล (ไม่บังคับ)</label>
+                <input type="text" name="label" class="form-control form-control-sm"
+                    placeholder="เช่น ผู้จัดการฝ่าย">
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="submit" class="btn btn-warning btn-sm w-100">
+                    <i class="bi bi-plus-lg"></i> เพิ่ม
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ตารางแสดง email แบ่งตามประเภทผู้ขับรถ -->
+    {% for driver_type in driver_types %}
+    {% set entries = grouped.get(driver_type, []) %}
+    <div class="mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+            <h6 class="mb-0">
+                <i class="bi bi-person-badge me-2 text-warning"></i>{{ driver_type }}
+                <span class="badge bg-secondary ms-1">{{ entries|length }}</span>
+            </h6>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Email</th>
+                        <th>ชื่อ</th>
+                        <th>วันที่เพิ่ม</th>
+                        <th class="text-center" style="width:120px;">จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if entries %}
+                        {% for e in entries %}
+                        <tr>
+                            <td><i class="bi bi-envelope me-1 text-warning"></i>{{ e.email }}</td>
+                            <td class="text-muted">{{ e.label or '-' }}</td>
+                            <td class="text-muted small">
+                                {{ e.created_at.strftime('%d/%m/%Y') if e.created_at else '-' }}
+                            </td>
+                            <td class="text-center">
+                                <button class="btn btn-outline-primary btn-sm me-1"
+                                    data-bs-toggle="modal" data-bs-target="#editModal"
+                                    data-id="{{ e.id }}"
+                                    data-email="{{ e.email }}"
+                                    data-label="{{ e.label or '' }}"
+                                    data-driver-type="{{ e.driver_type }}">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-outline-danger btn-sm"
+                                    data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                    data-id="{{ e.id }}"
+                                    data-email="{{ e.email }}"
+                                    data-driver-type="{{ e.driver_type }}">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted small py-2">
+                                <i class="bi bi-info-circle me-1"></i>ไม่มีการบันทึกข้อมูล
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endfor %}
+
+</div>
+
+<!-- Modal แก้ไข -->
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="POST" id="editForm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i>แก้ไข Email</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small">ประเภทผู้ขับรถ</label>
+                        <select name="driver_type" id="editDriverType" class="form-select form-select-sm" required>
+                            {% for dt in driver_types %}
+                            <option value="{{ dt }}">{{ dt }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small">Email</label>
+                        <input type="email" name="email" id="editEmail" class="form-control form-control-sm" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small">ชื่อ/คำอธิบาย</label>
+                        <input type="text" name="label" id="editLabel" class="form-control form-control-sm">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="bi bi-check-lg me-1"></i>บันทึก
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal ยืนยันลบ -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <form method="POST" id="deleteForm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-trash me-2 text-danger"></i>ยืนยันการลบ</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-1">ต้องการลบ email:</p>
+                    <p class="fw-bold text-danger" id="deleteEmailText"></p>
+                    <p class="text-muted small mb-0">ออกจากประเภท "<span id="deleteDriverTypeText"></span>"?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="submit" class="btn btn-danger btn-sm">
+                        <i class="bi bi-trash me-1"></i>ลบ
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.getElementById('editModal').addEventListener('show.bs.modal', function (e) {
+    const btn = e.relatedTarget;
+    document.getElementById('editForm').action = `/admin/notify-emails/${btn.dataset.id}/edit`;
+    document.getElementById('editEmail').value = btn.dataset.email;
+    document.getElementById('editLabel').value = btn.dataset.label;
+    const sel = document.getElementById('editDriverType');
+    for (let opt of sel.options) {
+        opt.selected = (opt.value === btn.dataset.driverType);
+    }
+});
+
+document.getElementById('deleteModal').addEventListener('show.bs.modal', function (e) {
+    const btn = e.relatedTarget;
+    document.getElementById('deleteForm').action = `/admin/notify-emails/${btn.dataset.id}/delete`;
+    document.getElementById('deleteEmailText').textContent = btn.dataset.email;
+    document.getElementById('deleteDriverTypeText').textContent = btn.dataset.driverType;
+});
+</script>
+{% endblock %}

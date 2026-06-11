@@ -1,7 +1,7 @@
 # app/routes/line.py
 from flask import Blueprint, request, session, redirect, render_template, url_for, flash, jsonify
 import requests
-from app.models import db, CustomerUser, ChargeHistory
+from app.models import db, CustomerUser, ChargeHistory, NotifyEmail
 from app.extensions import mail
 from app.routes import delete_session
 from flask_mail import Message
@@ -22,12 +22,6 @@ r = redis.StrictRedis(host=os.getenv('REDIS_HOST', 'localhost'), port=6379, db=0
 web_url = os.getenv('web_url')
 channel_id = os.getenv('channel_id')
 channel_secret = os.getenv('channel_secret')
-mail_admin = os.getenv('mail_admin')
-mail_admin_employee = os.getenv('mail_admin_employee')
-mail_admin_white = os.getenv('mail_admin_white')
-mail_admin_orange = os.getenv('mail_admin_orange')
-mail_admin_white_temp = os.getenv('mail_admin_white_temp')
-mail_admin_orange_temp = os.getenv('mail_admin_orange_temp')
 
 department_list = [
     "ฝอก.", "ฝตส.", "ฝพธ.", "ฝปภ.", "ฝบฟ.", "ฝบก.", "ฝอจ.", "ฝวฟ.", "ฝวจ.", "ฝจห.",
@@ -45,7 +39,7 @@ def dashboard():
     # if 'admin' not in session:
     #     return redirect(url_for('admin_bp.login'))
     users = CustomerUser.query.all()
-    return render_template('admin/dashboard.html', users=users)
+    return render_template('admin/admin_users.html', users=users)
 
 @csrf.exempt
 @line_bp.route('/linelogin')
@@ -205,26 +199,25 @@ def register():
     db.session.add(reg)
     db.session.commit()
 
-    # ส่งอีเมลแจ้งผู้ดูแลระบบ
-    role_map = {
-    "mail_admin_orange": ["คนขับรถสีส้ม", "คนขับรถชั่วคราวสีส้ม"],
-    "mail_admin_white": ["คนขับรถสีขาว", "คนขับรถชั่วคราวสีขาว"],
-    "mail_admin_employee": ["พนักงาน MEA"]
-}
+    # ดึง email admin จาก DB — fallback เป็น env var ถ้าไม่มีข้อมูลใน DB
+    admin_emails = [e.email for e in NotifyEmail.query.filter_by(driver_type=driver_type).all()]
+    if not admin_emails:
+        fallback_key = {
+            "พนักงาน MEA":           "mail_admin_employee",
+            "คนขับรถสีส้ม":          "mail_admin_orange",
+            "คนขับรถสีขาว":          "mail_admin_white",
+            "คนขับรถชั่วคราวสีส้ม": "mail_admin_orange_temp",
+            "คนขับรถชั่วคราวสีขาว": "mail_admin_white_temp",
+        }
+        raw = os.getenv(fallback_key.get(driver_type, ''), '')
+        admin_emails = [e.strip() for e in raw.split(',') if e.strip()]
 
-    # หา email admin ตาม driver_type
-    mail_admin = None
-    for admin_key, type_list in role_map.items():
-        if driver_type in type_list:
-            mail_admin = globals().get(admin_key)  # ดึงค่าตัวแปร mail_admin_orange / mail_admin_white ...
-            break
-    
-    if not mail_admin:
+    if not admin_emails:
         return f"ไม่พบ email admin ของประเภท {driver_type}"
-    
+
     msg = Message(
         subject=f"ตรวจสอบการลงทะเบียน {driver_type} ระบบ Line2Charge",
-        recipients=[mail_admin]
+        recipients=admin_emails
     )
     msg.body = (
         f"กรุณาตรวจสอบการลงทะเบียนของ: {driver_type}\n"
@@ -234,7 +227,7 @@ def register():
         f"ป้ายทะเบียน: {', '.join(clean_plate)}\n"
         f"ลิงก์ข้อมูลผู้ใช้: {web_url}/admin/customer"
     )
-    print("Sending email to admin:", mail_admin)
+    print("Sending email to admin:", admin_emails)
     print("Email body:", msg.body)
 
     try:
@@ -605,26 +598,25 @@ def edit_profile():
             print("status_department:", status_department)
             print("status_license:", status_license)
 
-            # ส่งอีเมลแจ้งผู้ดูแลระบบ
-            role_map = {
-                "mail_admin_orange": ["คนขับรถสีส้ม", "คนขับรถชั่วคราวสีส้ม"],
-                "mail_admin_white": ["คนขับรถสีขาว", "คนขับรถชั่วคราวสีขาว"],
-                "mail_admin_employee": ["พนักงาน MEA"]
-            }
+            # ดึง email admin จาก DB — fallback เป็น env var ถ้าไม่มีข้อมูลใน DB
+            admin_emails = [e.email for e in NotifyEmail.query.filter_by(driver_type=driver_type).all()]
+            if not admin_emails:
+                fallback_key = {
+                    "พนักงาน MEA":           "mail_admin_employee",
+                    "คนขับรถสีส้ม":          "mail_admin_orange",
+                    "คนขับรถสีขาว":          "mail_admin_white",
+                    "คนขับรถชั่วคราวสีส้ม": "mail_admin_orange_temp",
+                    "คนขับรถชั่วคราวสีขาว": "mail_admin_white_temp",
+                }
+                raw = os.getenv(fallback_key.get(driver_type, ''), '')
+                admin_emails = [e.strip() for e in raw.split(',') if e.strip()]
 
-            # หา email admin ตาม driver_type
-            mail_admin = None
-            for admin_key, type_list in role_map.items():
-                if driver_type in type_list:
-                    mail_admin = globals().get(admin_key)  # ดึงค่าตัวแปร mail_admin_orange / mail_admin_white ...
-                    break
-            
-            if not mail_admin:
+            if not admin_emails:
                 return f"ไม่พบ email admin ของประเภท {driver_type}"
 
             msg = Message(
                 subject=f"ตรวจสอบการแก้ไขข้อมูล {driver_type} ระบบ Line2Charge",
-                recipients=[mail_admin]
+                recipients=admin_emails
             )
             msg.body = (
                 f"กรุณาตรวจสอบการแก้ไขข้อมูลผู้ใช้:\n"

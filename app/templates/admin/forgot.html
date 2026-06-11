@@ -1,29 +1,63 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" data-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <title>ลืมรหัสผ่าน</title>
+    <title>ลืมรหัสผ่าน - Line2Charge</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- Bootstrap 5 -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body {
-            background-color: #f1f3f5;
+        :root{
+            --bg-body:#0b0e14;
+            --bg-card:#161b24;
+            --border:#232838;
+            --text-primary:#e6e8eb;
+            --text-muted:#8b95a5;
+            --accent:#3b82f6;
+            --teal:#14b8a6;
         }
-        .forgot-container {
-            max-width: 450px;
-            margin-top: 100px;
-            padding: 30px;
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+        body{
+            font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+            background:var(--bg-body);
+            color:var(--text-primary);
         }
+        .forgot-container{
+            max-width:420px;
+            width:100%;
+            margin-top:100px;
+            padding:2rem;
+            background:var(--bg-card);
+            border:1px solid var(--border);
+            border-radius:12px;
+            box-shadow:0 4px 16px rgba(0,0,0,.4);
+        }
+        .forgot-container h4{
+            display:flex; align-items:center; justify-content:center; gap:.5rem;
+        }
+        .forgot-container .logo-mark{
+            width:34px; height:34px; border-radius:8px;
+            background:linear-gradient(135deg,var(--accent),var(--teal));
+            display:inline-flex; align-items:center; justify-content:center;
+            font-size:1.1rem;
+        }
+        .form-label{ color:var(--text-muted); }
+        .form-control{
+            background-color:#1d2330; border-color:var(--border); color:var(--text-primary);
+        }
+        .form-control:focus{
+            background-color:#1d2330; border-color:var(--accent); color:var(--text-primary);
+            box-shadow:0 0 0 .2rem rgba(59,130,246,.15);
+        }
+        .form-control::placeholder{ color:var(--text-muted); }
+        .btn-primary{ background-color:var(--accent); border-color:var(--accent); }
+        .btn-primary:hover{ background-color:#2563eb; border-color:#2563eb; }
+        a{ color:var(--accent); }
     </style>
 </head>
 <body>
 <div class="container d-flex justify-content-center align-items-center min-vh-100">
     <div class="forgot-container">
-        <h4 class="text-center mb-4">🔑 ลืมรหัสผ่าน</h4>
+        <h4 class="mb-4"><span class="logo-mark">⚡</span>ลืมรหัสผ่าน</h4>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
@@ -40,7 +74,7 @@
             <div class="mb-3">
                 <label for="username" class="form-label">Username</label>
                 <input type="username" class="form-control" id="username" name="username" placeholder="Username" required>
-            </div>            
+            </div>
             <div class="mb-3">
                 <label for="email" class="form-label">E-mail</label>
                 <input type="email" class="form-control" id="email" name="email" placeholder="your@email.com" required>
@@ -56,6 +90,6 @@
 </div>
 
 <!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

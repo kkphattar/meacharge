@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin Dashboard — ตัวอย่าง</title>
+<style>
+/* ========================================================
+   1. THEME VARIABLES
+   ======================================================== */
+:root{
+    --radius:10px;
+    --transition:0.2s ease;
+    --orange:#f97316;
+    --orange-soft:rgba(249,115,22,.15);
+}
+[data-theme="dark"]{
+    --bg-body:#0b0e14;
+    --bg-surface:#11151c;
+    --bg-card:#161b24;
+    --bg-elevated:#1d2330;
+    --border:#232838;
+    --text-primary:#e6e8eb;
+    --text-secondary:#8b95a5;
+    --text-muted:#5b6573;
+    --accent:#3b82f6;
+    --accent-soft:rgba(59,130,246,.15);
+    --teal:#14b8a6;
+    --teal-soft:rgba(20,184,166,.15);
+    --success:#22c55e;
+    --success-soft:rgba(34,197,94,.15);
+    --warning:#f59e0b;
+    --warning-soft:rgba(245,158,11,.15);
+    --danger:#ef4444;
+    --danger-soft:rgba(239,68,68,.15);
+    --shadow:0 4px 16px rgba(0,0,0,.4);
+}
+[data-theme="light"]{
+    --bg-body:#f1f5f9;
+    --bg-surface:#ffffff;
+    --bg-card:#ffffff;
+    --bg-elevated:#f8fafc;
+    --border:#e2e8f0;
+    --text-primary:#0f172a;
+    --text-secondary:#64748b;
+    --text-muted:#94a3b8;
+    --accent:#2563eb;
+    --accent-soft:rgba(37,99,235,.1);
+    --teal:#0d9488;
+    --teal-soft:rgba(13,148,136,.1);
+    --success:#16a34a;
+    --success-soft:rgba(22,163,74,.1);
+    --warning:#d97706;
+    --warning-soft:rgba(217,119,6,.1);
+    --danger:#dc2626;
+    --danger-soft:rgba(220,38,38,.1);
+    --shadow:0 4px 16px rgba(0,0,0,.06);
+}
+
+/* ========================================================
+   2. RESET & BASE
+   ======================================================== */
+*{ margin:0; padding:0; box-sizing:border-box; }
+body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    background:var(--bg-body);
+    color:var(--text-primary);
+    transition:background var(--transition),color var(--transition);
+}
+a{ color:inherit; text-decoration:none; }
+
+/* ========================================================
+   3. LAYOUT
+   ======================================================== */
+.app{ display:flex; min-height:100vh; }
+
+/* --- Sidebar --- */
+.sidebar{
+    width:260px;
+    background:var(--bg-surface);
+    border-right:1px solid var(--border);
+    position:fixed; top:0; bottom:0; left:0;
+    display:flex; flex-direction:column;
+    transition:transform var(--transition);
+    z-index:1000;
+}
+.sidebar-brand{
+    padding:1.4rem 1.5rem;
+    font-size:1.15rem; font-weight:700;
+    display:flex; align-items:center; gap:.6rem;
+    border-bottom:1px solid var(--border);
+}
+.sidebar-brand .logo-mark{
+    width:34px; height:34px; border-radius:8px;
+    background:linear-gradient(135deg,var(--accent),var(--teal));
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.1rem;
+}
+.sidebar-nav{ padding:.75rem 0; flex:1; overflow-y:auto; }
+.nav-section-label{
+    padding:1rem 1.5rem .4rem;
+    font-size:.7rem; text-transform:uppercase; letter-spacing:.08em;
+    color:var(--text-muted);
+}
+.nav-item{
+    display:flex; align-items:center; gap:.75rem;
+    padding:.7rem 1.5rem;
+    color:var(--text-secondary);
+    font-size:.88rem;
+    border-left:3px solid transparent;
+    transition:all var(--transition);
+    cursor:pointer;
+}
+.nav-item .nav-icon{ font-size:1.05rem; width:1.3rem; text-align:center; }
+.nav-item:hover{ background:var(--bg-elevated); color:var(--text-primary); }
+.nav-item.active{
+    color:var(--accent);
+    background:var(--accent-soft);
+    border-left-color:var(--accent);
+    font-weight:600;
+}
+.sidebar-footer{
+    padding:1rem 1.5rem;
+    border-top:1px solid var(--border);
+    font-size:.75rem; color:var(--text-muted);
+}
+
+/* --- Main column --- */
+.main{
+    flex:1; margin-left:260px;
+    display:flex; flex-direction:column; min-height:100vh;
+    transition:margin var(--transition);
+}
+
+/* --- Top navbar --- */
+.navbar{
+    height:64px;
+    background:var(--bg-surface);
+    border-bottom:1px solid var(--border);
+    display:flex; align-items:center; gap:1rem;
+    padding:0 1.5rem;
+    position:sticky; top:0; z-index:900;
+}
+.hamburger{
+    display:none;
+    background:none; border:1px solid var(--border); border-radius:8px;
+    width:38px; height:38px;
+    font-size:1.1rem; color:var(--text-primary); cursor:pointer;
+}
+.search-box{ flex:1; max-width:360px; position:relative; }
+.search-box span{
+    position:absolute; left:.75rem; top:50%; transform:translateY(-50%);
+    color:var(--text-muted); font-size:.9rem; pointer-events:none;
+}
+.search-box input{
+    width:100%; padding:.55rem .75rem .55rem 2.1rem;
+    border-radius:8px; border:1px solid var(--border);
+    background:var(--bg-elevated); color:var(--text-primary); font-size:.875rem;
+}
+.search-box input:focus{ outline:none; border-color:var(--accent); }
+.navbar-actions{ margin-left:auto; display:flex; align-items:center; gap:.6rem; }
+.icon-btn{
+    width:38px; height:38px; border-radius:8px;
+    border:1px solid var(--border); background:var(--bg-elevated);
+    color:var(--text-primary); cursor:pointer;
+    display:flex; align-items:center; justify-content:center; font-size:1rem;
+    transition:all var(--transition);
+}
+.icon-btn:hover{ border-color:var(--accent); color:var(--accent); }
+.user-chip{
+    display:flex; align-items:center; gap:.5rem;
+    padding:.35rem .8rem .35rem .35rem; border-radius:999px;
+    background:var(--bg-elevated); border:1px solid var(--border);
+    font-size:.85rem; cursor:pointer;
+}
+.avatar{
+    width:30px; height:30px; border-radius:50%;
+    background:linear-gradient(135deg,var(--accent),var(--teal));
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:.78rem; color:#fff;
+}
+
+/* --- Content --- */
+.content{ padding:1.5rem; flex:1; }
+.page-title{ font-size:1.35rem; font-weight:700; margin-bottom:.25rem; }
+.page-subtitle{ font-size:.85rem; color:var(--text-secondary); margin-bottom:1.5rem; }
+
+/* ========================================================
+   4. SUMMARY CARDS
+   ======================================================== */
+.cards-grid{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:1rem; margin-bottom:1.5rem;
+}
+.card{
+    background:var(--bg-card); border:1px solid var(--border);
+    border-radius:var(--radius); padding:1.25rem; box-shadow:var(--shadow);
+}
+.card-top{ display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:.6rem; }
+.card-label{
+    font-size:.76rem; color:var(--text-secondary);
+    text-transform:uppercase; letter-spacing:.06em;
+}
+.card-icon{
+    width:36px; height:36px; border-radius:8px;
+    display:flex; align-items:center; justify-content:center; font-size:1.05rem;
+}
+.card-value{ font-size:1.85rem; font-weight:700; line-height:1.2; }
+.card-trend{ font-size:.78rem; margin-top:.5rem; }
+.trend-up{ color:var(--success); }
+.trend-down{ color:var(--danger); }
+
+/* ========================================================
+   5. TOOLBAR (search + filters)
+   ======================================================== */
+.toolbar{
+    display:flex; flex-wrap:wrap; gap:.65rem; align-items:center;
+    margin-bottom:1rem;
+}
+.toolbar input, .toolbar select{
+    padding:.55rem .75rem; border-radius:8px; border:1px solid var(--border);
+    background:var(--bg-card); color:var(--text-primary); font-size:.85rem;
+}
+.toolbar input:focus, .toolbar select:focus{ outline:none; border-color:var(--accent); }
+.toolbar .toolbar-search{ flex:1; min-width:180px; }
+.toolbar .spacer{ flex:1; }
+.btn{
+    padding:.55rem 1.1rem; border-radius:8px; border:1px solid var(--border);
+    background:var(--bg-elevated); color:var(--text-primary); font-size:.85rem;
+    cursor:pointer; transition:all var(--transition); white-space:nowrap;
+}
+.btn:hover{ border-color:var(--accent); color:var(--accent); }
+.btn-primary{ background:var(--accent); border-color:var(--accent); color:#fff; }
+.btn-primary:hover{ opacity:.9; color:#fff; }
+
+/* ========================================================
+   6. TABLE
+   ======================================================== */
+.table-card{
+    background:var(--bg-card); border:1px solid var(--border);
+    border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow);
+}
+.table-scroll{ overflow-x:auto; }
+table{ width:100%; border-collapse:collapse; font-size:.875rem; min-width:760px; }
+thead th{
+    text-align:left; padding:.85rem 1rem;
+    background:var(--bg-elevated); color:var(--text-secondary);
+    font-size:.72rem; text-transform:uppercase; letter-spacing:.06em;
+    border-bottom:1px solid var(--border);
+    cursor:pointer; white-space:nowrap; user-select:none;
+}
+thead th:hover{ color:var(--accent); }
+thead th .sort-arrow{ opacity:.4; margin-left:.25rem; font-size:.7rem; }
+thead th.sorted .sort-arrow{ opacity:1; color:var(--accent); }
+tbody td{ padding:.8rem 1rem; border-bottom:1px solid var(--border); vertical-align:middle; }
+tbody tr:hover{ background:var(--bg-elevated); }
+tbody tr:last-child td{ border-bottom:none; }
+.cell-name{ font-weight:600; }
+.cell-muted{ color:var(--text-secondary); font-size:.8rem; }
+.empty-row td{ text-align:center; padding:2.5rem 1rem; color:var(--text-muted); }
+
+/* ========================================================
+   7. BADGES
+   ======================================================== */
+.badge{
+    display:inline-flex; align-items:center; padding:.28rem .65rem;
+    border-radius:999px; font-size:.72rem; font-weight:600; white-space:nowrap;
+}
+.badge-success{ background:var(--success-soft); color:var(--success); }
+.badge-warning{ background:var(--warning-soft); color:var(--warning); }
+.badge-blue{ background:var(--accent-soft); color:var(--accent); }
+.badge-orange{ background:var(--orange-soft); color:var(--orange); }
+.badge-gray{ background:var(--bg-elevated); color:var(--text-secondary); border:1px solid var(--border); }
+
+/* ========================================================
+   8. ACTION BUTTONS (table row)
+   ======================================================== */
+.action-btn{
+    width:32px; height:32px; border-radius:6px;
+    border:1px solid var(--border); background:transparent;
+    color:var(--text-secondary); cursor:pointer;
+    display:inline-flex; align-items:center; justify-content:center;
+    transition:all var(--transition); margin-right:.25rem; font-size:.95rem;
+}
+.action-btn:hover{ border-color:var(--accent); color:var(--accent); }
+.action-btn.danger:hover{ border-color:var(--danger); color:var(--danger); }
+
+/* ========================================================
+   9. PAGINATION / TABLE FOOTER
+   ======================================================== */
+.table-footer{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:.85rem 1rem; border-top:1px solid var(--border);
+    flex-wrap:wrap; gap:.6rem;
+}
+.pagination{ display:flex; gap:.35rem; }
+.page-btn{
+    min-width:32px; height:32px; padding:0 .5rem; border-radius:6px;
+    border:1px solid var(--border); background:var(--bg-elevated);
+    color:var(--text-primary); cursor:pointer; font-size:.8rem;
+    transition:all var(--transition);
+}
+.page-btn:hover:not(:disabled){ border-color:var(--accent); color:var(--accent); }
+.page-btn.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
+.page-btn:disabled{ opacity:.4; cursor:not-allowed; }
+
+/* ========================================================
+   10. MODAL
+   ======================================================== */
+.modal-overlay{
+    position:fixed; inset:0; background:rgba(0,0,0,.55);
+    display:none; align-items:center; justify-content:center;
+    z-index:2000; padding:1rem;
+}
+.modal-overlay.show{ display:flex; }
+.modal{
+    background:var(--bg-card); border:1px solid var(--border);
+    border-radius:var(--radius); width:100%; max-width:480px;
+    box-shadow:var(--shadow); animation:modalIn .15s ease;
+}
+@keyframes modalIn{ from{ opacity:0; transform:translateY(-12px); } to{ opacity:1; transform:translateY(0); } }
+.modal-header{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:1rem 1.25rem; border-bottom:1px solid var(--border);
+}
+.modal-header h3{ font-size:1rem; }
+.modal-close{
+    background:none; border:none; font-size:1.2rem;
+    color:var(--text-secondary); cursor:pointer; line-height:1;
+}
+.modal-close:hover{ color:var(--danger); }
+.modal-body{ padding:1.25rem; display:flex; flex-direction:column; gap:.9rem; max-height:70vh; overflow-y:auto; }
+.modal-body.confirm-body{ font-size:.9rem; color:var(--text-secondary); }
+.modal-footer{ padding:1rem 1.25rem; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:.5rem; }
+.field-row{ display:grid; grid-template-columns:1fr 1fr; gap:.75rem; }
+.field label{
+    display:block; font-size:.72rem; color:var(--text-secondary);
+    margin-bottom:.35rem; text-transform:uppercase; letter-spacing:.05em;
+}
+.field input, .field select{
+    width:100%; padding:.55rem .75rem; border-radius:8px;
+    border:1px solid var(--border); background:var(--bg-elevated);
+    color:var(--text-primary); font-size:.875rem;
+}
+.field input:focus, .field select:focus{ outline:none; border-color:var(--accent); }
+
+/* ========================================================
+   11. RESPONSIVE
+   ======================================================== */
+.sidebar-overlay{
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:999;
+}
+@media (max-width:900px){
+    .sidebar{ transform:translateX(-100%); }
+    .sidebar.open{ transform:translateX(0); }
+    .main{ margin-left:0; }
+    .hamburger{ display:flex; align-items:center; justify-content:center; }
+    .search-box{ display:none; }
+    .field-row{ grid-template-columns:1fr; }
+    .sidebar-overlay.show{ display:block; }
+}
+@media (max-width:520px){
+    .content{ padding:1rem; }
+    .navbar{ padding:0 1rem; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+    <!-- ============ SIDEBAR ============ -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <span class="logo-mark">⚡</span>
+            <span>Line2Charge</span>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-section-label">เมนูหลัก</div>
+            <a class="nav-item active" data-page="dashboard"><span class="nav-icon">🏠</span>หน้าหลัก</a>
+            <a class="nav-item" data-page="users"><span class="nav-icon">👥</span>ผู้ใช้งาน</a>
+            <a class="nav-item" data-page="history"><span class="nav-icon">⚡</span>ประวัติการชาร์จ</a>
+            <a class="nav-item" data-page="emails"><span class="nav-icon">✉️</span>Email แจ้งเตือน</a>
+            <div class="nav-section-label">บัญชี</div>
+            <a class="nav-item" data-page="profile"><span class="nav-icon">👤</span>โปรไฟล์</a>
+            <a class="nav-item" data-page="logout"><span class="nav-icon">🚪</span>ออกจากระบบ</a>
+        </nav>
+        <div class="sidebar-footer">
+            Line2Charge Admin · ตัวอย่าง UI v2
+        </div>
+    </aside>
+
+    <!-- ============ MAIN ============ -->
+    <div class="main">
+
+        <!-- Navbar -->
+        <header class="navbar">
+            <button class="hamburger" id="hamburgerBtn">☰</button>
+            <div class="search-box">
+                <span>🔍</span>
+                <input type="text" id="searchInput" placeholder="ค้นหาชื่อ, ทะเบียน, หน่วยงาน...">
+            </div>
+            <div class="navbar-actions">
+                <button class="icon-btn" id="themeToggle" title="สลับโหมดสี">🌙</button>
+                <div class="user-chip">
+                    <span class="avatar">SA</span>
+                    <span>SuperAdmin</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content -->
+        <main class="content">
+            <div class="page-title">ภาพรวมระบบ</div>
+            <div class="page-subtitle">สรุปข้อมูลผู้ใช้งานและสถานะการลงทะเบียนทั้งหมด</div>
+
+            <!-- Summary cards -->
+            <section class="cards-grid">
+                <div class="card">
+                    <div class="card-top">
+                        <span class="card-label">ผู้ใช้งานทั้งหมด</span>
+                        <span class="card-icon" style="background:var(--accent-soft); color:var(--accent);">👥</span>
+                    </div>
+                    <div class="card-value" id="statTotal">0</div>
+                    <div class="card-trend trend-up">▲ ข้อมูลล่าสุด</div>
+                </div>
+                <div class="card">
+                    <div class="card-top">
+                        <span class="card-label">ยืนยันแล้ว</span>
+                        <span class="card-icon" style="background:var(--success-soft); color:var(--success);">✅</span>
+                    </div>
+                    <div class="card-value" id="statVerified">0</div>
+                    <div class="card-trend trend-up" id="statVerifiedPct">0%</div>
+                </div>
+                <div class="card">
+                    <div class="card-top">
+                        <span class="card-label">รอตรวจสอบ</span>
+                        <span class="card-icon" style="background:var(--warning-soft); color:var(--warning);">⏳</span>
+                    </div>
+                    <div class="card-value" id="statPending">0</div>
+                    <div class="card-trend trend-down" id="statPendingPct">0%</div>
+                </div>
+                <div class="card">
+                    <div class="card-top">
+                        <span class="card-label">ผู้ขับรถชั่วคราว</span>
+                        <span class="card-icon" style="background:var(--orange-soft); color:var(--orange);">🕒</span>
+                    </div>
+                    <div class="card-value" id="statTemp">0</div>
+                    <div class="card-trend" style="color:var(--text-secondary)">ใกล้หมดอายุ 14 วัน</div>
+                </div>
+            </section>
+
+            <!-- Toolbar -->
+            <section class="toolbar">
+                <input type="text" class="toolbar-search" id="toolbarSearch" placeholder="ค้นหา... (เว้นวรรคเพื่อค้นหาหลายเงื่อนไข)">
+                <select id="filterType">
+                    <option value="">ประเภทผู้ขับรถ — ทั้งหมด</option>
+                    <option value="พนักงาน MEA">พนักงาน MEA</option>
+                    <option value="คนขับรถสีส้ม">คนขับรถสีส้ม</option>
+                    <option value="คนขับรถสีขาว">คนขับรถสีขาว</option>
+                    <option value="คนขับรถชั่วคราวสีส้ม">คนขับรถชั่วคราวสีส้ม</option>
+                    <option value="คนขับรถชั่วคราวสีขาว">คนขับรถชั่วคราวสีขาว</option>
+                </select>
+                <select id="filterStatus">
+                    <option value="">สถานะ — ทั้งหมด</option>
+                    <option value="verified">ยืนยันแล้ว</option>
+                    <option value="pending">รอตรวจสอบ</option>
+                </select>
+                <div class="spacer"></div>
+                <button class="btn btn-primary" id="addUserBtn">+ เพิ่มผู้ใช้งาน</button>
+            </section>
+
+            <!-- Table -->
+            <section class="table-card">
+                <div class="table-scroll">
+                    <table id="usersTable">
+                        <thead>
+                            <tr>
+                                <th data-col="index">#</th>
+                                <th data-col="full_name">ชื่อ-นามสกุล <span class="sort-arrow">▲</span></th>
+                                <th data-col="department">หน่วยงาน <span class="sort-arrow">▲</span></th>
+                                <th data-col="license_plate">ทะเบียนรถ <span class="sort-arrow">▲</span></th>
+                                <th data-col="driver_type">ประเภทผู้ขับรถ <span class="sort-arrow">▲</span></th>
+                                <th data-col="phone">เบอร์โทร <span class="sort-arrow">▲</span></th>
+                                <th data-col="status">สถานะ <span class="sort-arrow">▲</span></th>
+                                <th class="text-center">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTbody">
+                            <!-- rows rendered by JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="table-footer">
+                    <small class="cell-muted" id="tableSummary">แสดง 0 รายการ</small>
+                    <div class="pagination" id="pagination"></div>
+                </div>
+            </section>
+        </main>
+    </div>
+</div>
+
+<!-- ============ MODAL: Add / Edit user ============ -->
+<div class="modal-overlay" id="userModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="userModalTitle">เพิ่มผู้ใช้งาน</h3>
+            <button class="modal-close" data-close-modal="userModal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="field-row">
+                <div class="field">
+                    <label>ชื่อ</label>
+                    <input type="text" id="fFirstName" placeholder="ชื่อ">
+                </div>
+                <div class="field">
+                    <label>นามสกุล</label>
+                    <input type="text" id="fLastName" placeholder="นามสกุล">
+                </div>
+            </div>
+            <div class="field">
+                <label>หน่วยงาน</label>
+                <input type="text" id="fDepartment" placeholder="เช่น ฝวจ.">
+            </div>
+            <div class="field-row">
+                <div class="field">
+                    <label>ทะเบียนรถ</label>
+                    <input type="text" id="fPlate" placeholder="เช่น กข1234">
+                </div>
+                <div class="field">
+                    <label>เบอร์โทรศัพท์</label>
+                    <input type="text" id="fPhone" placeholder="0812345678">
+                </div>
+            </div>
+            <div class="field-row">
+                <div class="field">
+                    <label>ประเภทผู้ขับรถ</label>
+                    <select id="fDriverType">
+                        <option>พนักงาน MEA</option>
+                        <option>คนขับรถสีส้ม</option>
+                        <option>คนขับรถสีขาว</option>
+                        <option>คนขับรถชั่วคราวสีส้ม</option>
+                        <option>คนขับรถชั่วคราวสีขาว</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>สถานะ</label>
+                    <select id="fStatus">
+                        <option value="verified">ยืนยันแล้ว</option>
+                        <option value="pending">รอตรวจสอบ</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn" data-close-modal="userModal">ยกเลิก</button>
+            <button class="btn btn-primary" id="saveUserBtn">บันทึก</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============ MODAL: Delete confirm ============ -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal" style="max-width:380px;">
+        <div class="modal-header">
+            <h3>ยืนยันการลบ</h3>
+            <button class="modal-close" data-close-modal="deleteModal">&times;</button>
+        </div>
+        <div class="modal-body confirm-body">
+            ต้องการลบผู้ใช้งาน <strong id="deleteUserName"></strong> ออกจากระบบใช่หรือไม่?
+            การลบไม่สามารถย้อนกลับได้
+        </div>
+        <div class="modal-footer">
+            <button class="btn" data-close-modal="deleteModal">ยกเลิก</button>
+            <button class="btn" style="background:var(--danger); border-color:var(--danger); color:#fff;" id="confirmDeleteBtn">ลบ</button>
+        </div>
+    </div>
+</div>
+
+<script>
+/* ============================================================
+   1. STATE
+   ============================================================ */
+const state = {
+    users: [],
+    filtered: [],
+    page: 1,
+    pageSize: 8,
+    sortCol: 'full_name',
+    sortAsc: true,
+    search: '',
+    filterType: '',
+    filterStatus: '',
+    editingId: null,
+    deletingId: null,
+};
+
+/* ============================================================
+   2. MOCK DATA
+   ============================================================ */
+const MOCK_USERS = [
+    ['สมชาย','ใจดี','ฝวจ.','1กก1234','พนักงาน MEA','0811111111','verified'],
+    ['สมหญิง','รักงาน','ฝวฟ.','2ขข2345','คนขับรถสีส้ม','0822222222','verified'],
+    ['อนุชา','มั่งมี','ฟขต.','3คค3456','คนขับรถสีขาว','0833333333','pending'],
+    ['วิชัย','ขยันยิ่ง','ฝบฟ.','4งง4567','คนขับรถชั่วคราวสีส้ม','0844444444','pending'],
+    ['ปราณี','สวยงาม','ฝอก.','5จจ5678','คนขับรถชั่วคราวสีขาว','0855555555','verified'],
+    ['ธนากร','ทองดี','ฝพธ.','6ฉฉ6789','พนักงาน MEA','0866666666','verified'],
+    ['กมลวรรณ','แสงทอง','ฝปภ.','7ชช7890','คนขับรถสีส้ม','0877777777','pending'],
+    ['ประสิทธิ์','เพียรทำ','ฝบก.','8ซซ8901','คนขับรถสีขาว','0888888888','verified'],
+    ['สุภาพร','ใจเย็น','ฝอจ.','9ญญ9012','คนขับรถชั่วคราวสีส้ม','0899999999','pending'],
+    ['เอกชัย','รุ่งเรือง','ฝวฟ.','1ฎฎ0123','คนขับรถชั่วคราวสีขาว','0810101010','verified'],
+    ['นิภา','ดวงใจ','ฝวจ.','2ฏฏ1234','พนักงาน MEA','0820202020','verified'],
+    ['ชัยวัฒน์','มีสุข','ฟขก.','3ฐฐ2345','คนขับรถสีส้ม','0830303030','pending'],
+    ['รัตนา','พูลทรัพย์','ฝบฟ.','4ฑฑ3456','คนขับรถสีขาว','0840404040','verified'],
+    ['ไพโรจน์','แก้วใส','ฝอก.','5ฒฒ4567','คนขับรถชั่วคราวสีส้ม','0850505050','pending'],
+    ['จิราพร','งามเลิศ','ฝพธ.','6ณณ5678','คนขับรถชั่วคราวสีขาว','0860606060','verified'],
+    ['ศักดิ์ชัย','เดชาวุธ','ฝปภ.','7ดด6789','พนักงาน MEA','0870707070','verified'],
+    ['อรทัย','บัวขาว','ฝบก.','8ตต7890','คนขับรถสีส้ม','0880808080','pending'],
+    ['มานพ','ทรงพล','ฝอจ.','9ถถ8901','คนขับรถสีขาว','0890909090','verified'],
+    ['วราภรณ์','ศรีสุข','ฟขต.','1ทท9012','คนขับรถชั่วคราวสีส้ม','0811212121','pending'],
+    ['ดำรงค์','ยอดเยี่ยม','ฝวฟ.','2ธธ0123','คนขับรถชั่วคราวสีขาว','0822323232','verified'],
+    ['สายสมร','แจ่มใส','ฝวจ.','3นน1234','พนักงาน MEA','0833434343','verified'],
+    ['บุญเลิศ','สถาพร','ฟขก.','4บบ2345','คนขับรถสีส้ม','0844545454','pending'],
+];
+
+function buildMockUsers(){
+    state.users = MOCK_USERS.map((row, i) => ({
+        id: i + 1,
+        first_name: row[0],
+        last_name: row[1],
+        full_name: row[0] + ' ' + row[1],
+        department: row[2],
+        license_plate: row[3],
+        driver_type: row[4],
+        phone: row[5],
+        status: row[6],
+    }));
+}
+
+/* ============================================================
+   3. DOM REFS
+   ============================================================ */
+const els = {
+    sidebar: document.getElementById('sidebar'),
+    sidebarOverlay: document.getElementById('sidebarOverlay'),
+    hamburgerBtn: document.getElementById('hamburgerBtn'),
+    themeToggle: document.getElementById('themeToggle'),
+    searchInput: document.getElementById('searchInput'),
+    toolbarSearch: document.getElementById('toolbarSearch'),
+    filterType: document.getElementById('filterType'),
+    filterStatus: document.getElementById('filterStatus'),
+    tbody: document.getElementById('usersTbody'),
+    pagination: document.getElementById('pagination'),
+    tableSummary: document.getElementById('tableSummary'),
+    addUserBtn: document.getElementById('addUserBtn'),
+    userModal: document.getElementById('userModal'),
+    userModalTitle: document.getElementById('userModalTitle'),
+    deleteModal: document.getElementById('deleteModal'),
+    deleteUserName: document.getElementById('deleteUserName'),
+    saveUserBtn: document.getElementById('saveUserBtn'),
+    confirmDeleteBtn: document.getElementById('confirmDeleteBtn'),
+    statTotal: document.getElementById('statTotal'),
+    statVerified: document.getElementById('statVerified'),
+    statVerifiedPct: document.getElementById('statVerifiedPct'),
+    statPending: document.getElementById('statPending'),
+    statPendingPct: document.getElementById('statPendingPct'),
+    statTemp: document.getElementById('statTemp'),
+    fFirstName: document.getElementById('fFirstName'),
+    fLastName: document.getElementById('fLastName'),
+    fDepartment: document.getElementById('fDepartment'),
+    fPlate: document.getElementById('fPlate'),
+    fPhone: document.getElementById('fPhone'),
+    fDriverType: document.getElementById('fDriverType'),
+    fStatus: document.getElementById('fStatus'),
+};
+
+/* ============================================================
+   4. RENDER FUNCTIONS
+   ============================================================ */
+function driverTypeBadge(type){
+    if (type === 'พนักงาน MEA') return `<span class="badge badge-blue">${type}</span>`;
+    if (type.includes('ส้ม')) return `<span class="badge badge-orange">${type}</span>`;
+    return `<span class="badge badge-gray">${type}</span>`;
+}
+
+function statusBadge(status){
+    return status === 'verified'
+        ? `<span class="badge badge-success">ยืนยันแล้ว</span>`
+        : `<span class="badge badge-warning">รอตรวจสอบ</span>`;
+}
+
+function renderStats(){
+    const total = state.users.length;
+    const verified = state.users.filter(u => u.status === 'verified').length;
+    const pending = total - verified;
+    const temp = state.users.filter(u => u.driver_type.includes('ชั่วคราว')).length;
+
+    els.statTotal.textContent = total;
+    els.statVerified.textContent = verified;
+    els.statPending.textContent = pending;
+    els.statTemp.textContent = temp;
+    els.statVerifiedPct.textContent = total ? `▲ ${Math.round(verified/total*100)}% ของทั้งหมด` : '0%';
+    els.statPendingPct.textContent = total ? `▼ ${Math.round(pending/total*100)}% ของทั้งหมด` : '0%';
+}
+
+function applyFilters(){
+    const term = state.search.trim().toLowerCase();
+    const terms = term.split(/\s+/).filter(Boolean);
+
+    state.filtered = state.users.filter(u => {
+        if (state.filterType && u.driver_type !== state.filterType) return false;
+        if (state.filterStatus && u.status !== state.filterStatus) return false;
+        if (!terms.length) return true;
+        const haystack = `${u.full_name} ${u.department} ${u.license_plate} ${u.phone} ${u.driver_type}`.toLowerCase();
+        return terms.every(t => haystack.includes(t));
+    });
+
+    sortFiltered();
+    state.page = 1;
+    renderTable();
+}
+
+function sortFiltered(){
+    const { sortCol, sortAsc } = state;
+    state.filtered.sort((a, b) => {
+        let A = a[sortCol], B = b[sortCol];
+        if (typeof A === 'string') A = A.toLowerCase();
+        if (typeof B === 'string') B = B.toLowerCase();
+        if (A < B) return sortAsc ? -1 : 1;
+        if (A > B) return sortAsc ? 1 : -1;
+        return 0;
+    });
+}
+
+function renderTable(){
+    const total = state.filtered.length;
+    const totalPages = Math.max(1, Math.ceil(total / state.pageSize));
+    state.page = Math.min(state.page, totalPages);
+
+    const start = (state.page - 1) * state.pageSize;
+    const rows = state.filtered.slice(start, start + state.pageSize);
+
+    if (!rows.length){
+        els.tbody.innerHTML = `<tr class="empty-row"><td colspan="8">ไม่พบข้อมูลที่ตรงกับเงื่อนไข</td></tr>`;
+    } else {
+        els.tbody.innerHTML = rows.map((u, i) => `
+            <tr data-id="${u.id}">
+                <td class="cell-muted">${start + i + 1}</td>
+                <td class="cell-name">${u.full_name}</td>
+                <td>${u.department}</td>
+                <td>${u.license_plate}</td>
+                <td>${driverTypeBadge(u.driver_type)}</td>
+                <td class="cell-muted">${u.phone}</td>
+                <td>${statusBadge(u.status)}</td>
+                <td class="text-center">
+                    <button class="action-btn" title="แก้ไข" data-action="edit" data-id="${u.id}">✏️</button>
+                    <button class="action-btn danger" title="ลบ" data-action="delete" data-id="${u.id}">🗑️</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    els.tableSummary.textContent = total
+        ? `แสดง ${start + 1}–${Math.min(start + state.pageSize, total)} จาก ${total} รายการ`
+        : 'แสดง 0 รายการ';
+
+    renderPagination(totalPages);
+    renderSortIndicators();
+    renderStats();
+}
+
+function renderPagination(totalPages){
+    let html = '';
+    html += `<button class="page-btn" data-page="${state.page-1}" ${state.page<=1?'disabled':''}>‹</button>`;
+
+    const span = 1;
+    for (let p = 1; p <= totalPages; p++){
+        if (p === 1 || p === totalPages || Math.abs(p - state.page) <= span){
+            html += `<button class="page-btn ${p===state.page?'active':''}" data-page="${p}">${p}</button>`;
+        } else if (Math.abs(p - state.page) === span + 1){
+            html += `<span class="cell-muted" style="padding:0 .25rem;">…</span>`;
+        }
+    }
+
+    html += `<button class="page-btn" data-page="${state.page+1}" ${state.page>=totalPages?'disabled':''}>›</button>`;
+    els.pagination.innerHTML = html;
+}
+
+function renderSortIndicators(){
+    document.querySelectorAll('#usersTable thead th[data-col]').forEach(th => {
+        const col = th.dataset.col;
+        th.classList.toggle('sorted', col === state.sortCol);
+        const arrow = th.querySelector('.sort-arrow');
+        if (arrow) arrow.textContent = (col === state.sortCol && !state.sortAsc) ? '▼' : '▲';
+    });
+}
+
+/* ============================================================
+   5. MODAL HELPERS
+   ============================================================ */
+function openModal(id){ document.getElementById(id).classList.add('show'); }
+function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+
+function openAddModal(){
+    state.editingId = null;
+    els.userModalTitle.textContent = 'เพิ่มผู้ใช้งาน';
+    els.fFirstName.value = '';
+    els.fLastName.value = '';
+    els.fDepartment.value = '';
+    els.fPlate.value = '';
+    els.fPhone.value = '';
+    els.fDriverType.value = 'พนักงาน MEA';
+    els.fStatus.value = 'pending';
+    openModal('userModal');
+}
+
+function openEditModal(id){
+    const u = state.users.find(x => x.id === id);
+    if (!u) return;
+    state.editingId = id;
+    els.userModalTitle.textContent = 'แก้ไขผู้ใช้งาน';
+    els.fFirstName.value = u.first_name;
+    els.fLastName.value = u.last_name;
+    els.fDepartment.value = u.department;
+    els.fPlate.value = u.license_plate;
+    els.fPhone.value = u.phone;
+    els.fDriverType.value = u.driver_type;
+    els.fStatus.value = u.status;
+    openModal('userModal');
+}
+
+function saveUser(){
+    const firstName = els.fFirstName.value.trim();
+    const lastName = els.fLastName.value.trim();
+    if (!firstName || !lastName){
+        alert('กรุณากรอกชื่อและนามสกุล');
+        return;
+    }
+
+    const payload = {
+        first_name: firstName,
+        last_name: lastName,
+        full_name: `${firstName} ${lastName}`,
+        department: els.fDepartment.value.trim() || '-',
+        license_plate: els.fPlate.value.trim() || '-',
+        phone: els.fPhone.value.trim() || '-',
+        driver_type: els.fDriverType.value,
+        status: els.fStatus.value,
+    };
+
+    if (state.editingId){
+        const idx = state.users.findIndex(u => u.id === state.editingId);
+        state.users[idx] = { ...state.users[idx], ...payload };
+    } else {
+        const nextId = state.users.length ? Math.max(...state.users.map(u => u.id)) + 1 : 1;
+        state.users.push({ id: nextId, ...payload });
+    }
+
+    closeModal('userModal');
+    applyFilters();
+}
+
+function openDeleteModal(id){
+    const u = state.users.find(x => x.id === id);
+    if (!u) return;
+    state.deletingId = id;
+    els.deleteUserName.textContent = u.full_name;
+    openModal('deleteModal');
+}
+
+function confirmDelete(){
+    state.users = state.users.filter(u => u.id !== state.deletingId);
+    state.deletingId = null;
+    closeModal('deleteModal');
+    applyFilters();
+}
+
+/* ============================================================
+   6. THEME & SIDEBAR
+   ============================================================ */
+function applyTheme(theme){
+    document.documentElement.setAttribute('data-theme', theme);
+    els.themeToggle.textContent = theme === 'dark' ? '🌙' : '☀️';
+    localStorage.setItem('l2c_theme', theme);
+}
+
+function toggleTheme(){
+    const current = document.documentElement.getAttribute('data-theme');
+    applyTheme(current === 'dark' ? 'light' : 'dark');
+}
+
+function toggleSidebar(){
+    els.sidebar.classList.toggle('open');
+    els.sidebarOverlay.classList.toggle('show');
+}
+
+/* ============================================================
+   7. EVENT BINDINGS
+   ============================================================ */
+function bindEvents(){
+    // Search (both navbar + toolbar search stay in sync)
+    els.searchInput.addEventListener('input', e => {
+        state.search = e.target.value;
+        els.toolbarSearch.value = e.target.value;
+        applyFilters();
+    });
+    els.toolbarSearch.addEventListener('input', e => {
+        state.search = e.target.value;
+        els.searchInput.value = e.target.value;
+        applyFilters();
+    });
+
+    // Filters
+    els.filterType.addEventListener('change', e => { state.filterType = e.target.value; applyFilters(); });
+    els.filterStatus.addEventListener('change', e => { state.filterStatus = e.target.value; applyFilters(); });
+
+    // Sortable headers
+    document.querySelectorAll('#usersTable thead th[data-col]').forEach(th => {
+        th.addEventListener('click', () => {
+            const col = th.dataset.col;
+            if (state.sortCol === col){
+                state.sortAsc = !state.sortAsc;
+            } else {
+                state.sortCol = col;
+                state.sortAsc = true;
+            }
+            sortFiltered();
+            renderTable();
+        });
+    });
+
+    // Pagination
+    els.pagination.addEventListener('click', e => {
+        const btn = e.target.closest('.page-btn');
+        if (!btn || btn.disabled) return;
+        state.page = parseInt(btn.dataset.page, 10);
+        renderTable();
+    });
+
+    // Row actions
+    els.tbody.addEventListener('click', e => {
+        const btn = e.target.closest('.action-btn');
+        if (!btn) return;
+        const id = parseInt(btn.dataset.id, 10);
+        if (btn.dataset.action === 'edit') openEditModal(id);
+        if (btn.dataset.action === 'delete') openDeleteModal(id);
+    });
+
+    // Modals
+    els.addUserBtn.addEventListener('click', openAddModal);
+    els.saveUserBtn.addEventListener('click', saveUser);
+    els.confirmDeleteBtn.addEventListener('click', confirmDelete);
+    document.querySelectorAll('[data-close-modal]').forEach(el => {
+        el.addEventListener('click', () => closeModal(el.dataset.closeModal));
+    });
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+        overlay.addEventListener('click', e => {
+            if (e.target === overlay) overlay.classList.remove('show');
+        });
+    });
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape'){
+            document.querySelectorAll('.modal-overlay.show').forEach(m => m.classList.remove('show'));
+        }
+    });
+
+    // Theme & sidebar
+    els.themeToggle.addEventListener('click', toggleTheme);
+    els.hamburgerBtn.addEventListener('click', toggleSidebar);
+    els.sidebarOverlay.addEventListener('click', toggleSidebar);
+
+    // Sidebar nav active state (demo only — no real navigation)
+    document.querySelectorAll('.nav-item[data-page]').forEach(item => {
+        item.addEventListener('click', () => {
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            item.classList.add('active');
+            if (window.innerWidth <= 900) toggleSidebar();
+        });
+    });
+}
+
+/* ============================================================
+   8. INIT
+   ============================================================ */
+function init(){
+    applyTheme(localStorage.getItem('l2c_theme') || 'dark');
+    buildMockUsers();
+    bindEvents();
+    applyFilters();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

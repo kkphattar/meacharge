@@ -1,6 +1,6 @@
 # app/routes/admin.py
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, Response
-from app.models import AdminUser, CustomerUser, ChargeHistory, AdminLog, db
+from app.models import AdminUser, CustomerUser, ChargeHistory, AdminLog, NotifyEmail, db
 import csv
 import io
 import os
@@ -84,12 +84,89 @@ def forgot_password():
 
 @admin_bp.route('/dashboard')
 @login_required
-@role_required('SuperAdmin', 'Admin_orange', 'Admin_white')
 def dashboard():
-    # if 'admin' not in session:
-    #     return redirect(url_for('admin_bp.login'))
+    role = current_user.role
+
+    # คนขับรถที่อยู่ในขอบเขตของ role ปัจจุบัน
+    if role == 'SuperAdmin':
+        customers = CustomerUser.query.all()
+    elif role in role_map:
+        customers = CustomerUser.query.filter(CustomerUser.driver_type.in_(role_map[role])).all()
+    else:
+        customers = []
+
+    total_drivers = len(customers)
+    verified_drivers = sum(1 for c in customers if c.is_verified)
+    unverified_drivers = total_drivers - verified_drivers
+
+    driver_type_counts = {}
+    for c in customers:
+        key = c.driver_type or 'ไม่ระบุ'
+        driver_type_counts[key] = driver_type_counts.get(key, 0) + 1
+    driver_type_counts = dict(sorted(driver_type_counts.items(), key=lambda x: x[1], reverse=True))
+
+    # ข้อมูลการชาร์จในขอบเขตเดียวกัน
+    if role == 'SuperAdmin':
+        charge_rows = ChargeHistory.query.all()
+        user_map = {c.user_id: c for c in CustomerUser.query.all()}
+    else:
+        user_ids = [c.user_id for c in customers]
+        user_map = {c.user_id: c for c in customers}
+        charge_rows = ChargeHistory.query.filter(ChargeHistory.user_id.in_(user_ids)).all() if user_ids else []
+
+    # พลังงานรายเดือน (6 เดือนล่าสุด)
+    now = datetime.utcnow()
+    months = []
+    y, m = now.year, now.month
+    for _ in range(6):
+        months.append((y, m))
+        m -= 1
+        if m == 0:
+            m, y = 12, y - 1
+    months.reverse()
+    monthly_energy = {f'{y:04d}-{m:02d}': 0.0 for y, m in months}
+
+    user_energy = {}
+    total_energy = 0.0
+    for r in charge_rows:
+        energy = r.energy_used or 0
+        total_energy += energy
+        if r.start_time:
+            key = r.start_time.strftime('%Y-%m')
+            if key in monthly_energy:
+                monthly_energy[key] += energy
+        user_energy[r.user_id] = user_energy.get(r.user_id, 0) + energy
+
+    top_users = sorted(user_energy.items(), key=lambda x: x[1], reverse=True)[:5]
+    top_users_data = []
+    for uid, energy in top_users:
+        cust = user_map.get(uid)
+        top_users_data.append({
+            'name': cust.full_name() if cust else uid,
+            'department': cust.department if cust else '-',
+            'energy': round(energy, 2),
+        })
+
+    return render_template(
+        'admin/dashboard.html',
+        total_drivers=total_drivers,
+        verified_drivers=verified_drivers,
+        unverified_drivers=unverified_drivers,
+        driver_type_counts=driver_type_counts,
+        monthly_labels=list(monthly_energy.keys()),
+        monthly_values=[round(v, 2) for v in monthly_energy.values()],
+        total_energy=round(total_energy, 2),
+        total_sessions=len(charge_rows),
+        top_users=top_users_data,
+    )
+
+
+@admin_bp.route('/admin_users')
+@login_required
+@role_required('SuperAdmin', 'Admin_orange', 'Admin_white', 'Admin', 'admin')
+def admin_users():
     users = AdminUser.query.all()
-    return render_template('admin/dashboard.html', users=users)
+    return render_template('admin/admin_users.html', users=users)
 
 @admin_bp.route('/add', methods=['GET', 'POST'])
 @login_required
@@ -132,7 +209,7 @@ def add_user():
         db.session.commit()
         log_action('ADD_ADMIN', detail=f'username={username} role={role}')
         flash("เพิ่มผู้ใช้งานเรียบร้อย", "success")
-        return redirect(url_for('admin_bp.dashboard'))
+        return redirect(url_for('admin_bp.admin_users'))
 
     return render_template('admin/add_user.html')
 
@@ -178,7 +255,7 @@ def edit_user(user_id):
             db.session.commit()
             log_action('EDIT_ADMIN', detail=f'target_id={user_id} role={role}')
             flash('✅ แก้ไขข้อมูลผู้ดูแลระบบเรียบร้อยแล้ว', 'success')
-            return redirect(url_for('admin_bp.dashboard'))
+            return redirect(url_for('admin_bp.admin_users'))
         except Exception as e:
             db.session.rollback()
             flash(f'เกิดข้อผิดพลาดในการบันทึกข้อมูล: {str(e)}', 'danger')
@@ -197,7 +274,7 @@ def delete_user(user_id):
     db.session.delete(user)
     db.session.commit()
     flash("ลบผู้ใช้เรียบร้อย", "success")
-    return redirect(url_for('admin_bp.dashboard'))
+    return redirect(url_for('admin_bp.admin_users'))
 
 @admin_bp.route('/logout')
 @login_required
@@ -294,6 +371,8 @@ def delete_session(session_id):
 role_map = {
     "Admin_orange": ["คนขับรถสีส้ม", "คนขับรถชั่วคราวสีส้ม"],
     "Admin_white": ["คนขับรถสีขาว", "คนขับรถชั่วคราวสีขาว"],
+    "Admin": ["คนขับรถสีส้ม", "คนขับรถชั่วคราวสีส้ม", "คนขับรถสีขาว", "คนขับรถชั่วคราวสีขาว"],
+    "admin": ["คนขับรถสีส้ม", "คนขับรถชั่วคราวสีส้ม", "คนขับรถสีขาว", "คนขับรถชั่วคราวสีขาว"],
 }
 
 
@@ -316,10 +395,10 @@ def view_customer():
 @admin_bp.route("/customers/<int:customer_id>/verify", methods=["POST"])
 @login_required
 def verify_customer_ajax(customer_id):
-    if current_user.role not in ['SuperAdmin', 'Admin_orange', 'Admin_white']:
+    if current_user.role not in ['SuperAdmin', 'Admin_orange', 'Admin_white', 'Admin', 'admin']:
         flash('คุณไม่มีสิทธิ์ในการยืนยันข้อมูลลูกค้า', 'danger')
         return redirect(url_for('admin_bp.view_customer'))
-    
+
     print("Request data:", request.get_json())
     data=request.get_json()
     user_id=data.get("user_id")
@@ -603,7 +682,7 @@ def customers_delete(customer_id):
 @login_required
 def save_customer():
     print("Request data:", request.get_json())
-    if current_user.role not in ['SuperAdmin', 'Admin_orange', 'Admin_white']:
+    if current_user.role not in ['SuperAdmin', 'Admin_orange', 'Admin_white', 'Admin', 'admin']:
         return jsonify({'success': False, 'message': 'Permission denied'}), 403
 
     data = request.get_json()
@@ -637,7 +716,7 @@ PER_PAGE = 50
 
 @admin_bp.route('/charge_history')
 @login_required
-@role_required('SuperAdmin', 'Admin_orange', 'Admin_white')
+@role_required('SuperAdmin', 'Admin_orange', 'Admin_white', 'Admin', 'admin')
 def charge_history():
     q = request.args.get('q', '').strip()
     date_from = request.args.get('date_from', '').strip()
@@ -742,7 +821,7 @@ def charge_history():
 
 @admin_bp.route('/charge_history/export')
 @login_required
-@role_required('SuperAdmin', 'Admin_orange', 'Admin_white')
+@role_required('SuperAdmin', 'Admin_orange', 'Admin_white', 'Admin', 'admin')
 def export_charge_history():
     q = request.args.get('q', '').strip()
     date_from = request.args.get('date_from', '').strip()
@@ -922,3 +1001,95 @@ def dev_auditlog_export():
         mimetype='text/csv; charset=utf-8-sig',
         headers={'Content-Disposition': f'attachment; filename={filename}'}
     )
+
+
+# ─── Notify Email CRUD (SuperAdmin only) ───
+
+from app.models.notify_email import DRIVER_TYPES
+
+@admin_bp.route('/notify-emails')
+@login_required
+@role_required('SuperAdmin')
+def notify_emails():
+    entries = NotifyEmail.query.order_by(NotifyEmail.driver_type, NotifyEmail.id).all()
+    grouped = {dt: [] for dt in DRIVER_TYPES}
+    for e in entries:
+        if e.driver_type in grouped:
+            grouped[e.driver_type].append(e)
+        else:
+            grouped.setdefault(e.driver_type, []).append(e)
+    return render_template('admin/notify_emails.html', grouped=grouped, driver_types=DRIVER_TYPES)
+
+
+@admin_bp.route('/notify-emails/add', methods=['POST'])
+@login_required
+@role_required('SuperAdmin')
+def notify_email_add():
+    driver_type = (request.form.get('driver_type') or '').strip()
+    email = (request.form.get('email') or '').strip().lower()
+    label = (request.form.get('label') or '').strip()
+
+    if not driver_type or driver_type not in DRIVER_TYPES:
+        flash('ประเภทผู้ขับรถไม่ถูกต้อง', 'danger')
+        return redirect(url_for('admin_bp.notify_emails'))
+    if not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', email):
+        flash('รูปแบบ email ไม่ถูกต้อง', 'danger')
+        return redirect(url_for('admin_bp.notify_emails'))
+
+    exists = NotifyEmail.query.filter_by(driver_type=driver_type, email=email).first()
+    if exists:
+        flash(f'{email} มีอยู่แล้วสำหรับประเภทนี้', 'warning')
+        return redirect(url_for('admin_bp.notify_emails'))
+
+    entry = NotifyEmail(driver_type=driver_type, email=email, label=label or None)
+    db.session.add(entry)
+    db.session.commit()
+    log_action('ADD_NOTIFY_EMAIL', detail=f'driver_type={driver_type} email={email}')
+    flash(f'เพิ่ม {email} เรียบร้อยแล้ว', 'success')
+    return redirect(url_for('admin_bp.notify_emails'))
+
+
+@admin_bp.route('/notify-emails/<int:entry_id>/edit', methods=['POST'])
+@login_required
+@role_required('SuperAdmin')
+def notify_email_edit(entry_id):
+    entry = NotifyEmail.query.get_or_404(entry_id)
+    new_email = (request.form.get('email') or '').strip().lower()
+    new_label = (request.form.get('label') or '').strip()
+    new_driver_type = (request.form.get('driver_type') or '').strip()
+
+    if not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', new_email):
+        flash('รูปแบบ email ไม่ถูกต้อง', 'danger')
+        return redirect(url_for('admin_bp.notify_emails'))
+    if new_driver_type not in DRIVER_TYPES:
+        flash('ประเภทผู้ขับรถไม่ถูกต้อง', 'danger')
+        return redirect(url_for('admin_bp.notify_emails'))
+
+    duplicate = NotifyEmail.query.filter(
+        NotifyEmail.driver_type == new_driver_type,
+        NotifyEmail.email == new_email,
+        NotifyEmail.id != entry_id
+    ).first()
+    if duplicate:
+        flash(f'{new_email} มีอยู่แล้วสำหรับประเภทนี้', 'warning')
+        return redirect(url_for('admin_bp.notify_emails'))
+
+    log_action('EDIT_NOTIFY_EMAIL', detail=f'id={entry_id} {entry.email}->{new_email} {entry.driver_type}->{new_driver_type}')
+    entry.email = new_email
+    entry.label = new_label or None
+    entry.driver_type = new_driver_type
+    db.session.commit()
+    flash('แก้ไขเรียบร้อยแล้ว', 'success')
+    return redirect(url_for('admin_bp.notify_emails'))
+
+
+@admin_bp.route('/notify-emails/<int:entry_id>/delete', methods=['POST'])
+@login_required
+@role_required('SuperAdmin')
+def notify_email_delete(entry_id):
+    entry = NotifyEmail.query.get_or_404(entry_id)
+    log_action('DELETE_NOTIFY_EMAIL', detail=f'id={entry_id} driver_type={entry.driver_type} email={entry.email}')
+    db.session.delete(entry)
+    db.session.commit()
+    flash(f'ลบ {entry.email} เรียบร้อยแล้ว', 'success')
+    return redirect(url_for('admin_bp.notify_emails'))

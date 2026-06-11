@@ -80,18 +80,13 @@
         <h3 class="mb-0">
             <i class="bi bi-shield-lock me-2" style="color:var(--primary-orange)"></i>Audit Log
         </h3>
-        <small class="text-muted">บันทึกการดำเนินการของผู้ดูแลระบบ</small>
+        <small>บันทึกการดำเนินการของผู้ดูแลระบบ</small>
     </div>
     <a href="?{{ build_query(page=1) }}&export=1"
        onclick="this.href='{{ url_for('admin_bp.dev_auditlog_export') }}?{{ build_query(page=1) }}'"
        class="btn btn-outline-success btn-sm">
         <i class="bi bi-download me-1"></i>Export CSV
     </a>
-</div>
-
-<div class="dev-banner">
-    <i class="bi bi-cone-striped me-1"></i>
-    หน้านี้เป็น <strong>Dev-only</strong> — ไม่แสดงบน Navbar | URL: <code>/admin/_sys/auditlog</code>
 </div>
 
 <!-- Stat -->
@@ -109,12 +104,12 @@
     <form method="GET" action="{{ url_for('admin_bp.dev_auditlog') }}">
         <div class="row g-3 align-items-end">
             <div class="col-12 col-md-3">
-                <label class="form-label text-muted small mb-1">ผู้ใช้ (username)</label>
+                <label class="form-label small mb-1">ผู้ใช้ (username)</label>
                 <input type="text" name="user" class="form-control form-control-sm"
                        placeholder="ค้นหา username..." value="{{ filters.user }}">
             </div>
             <div class="col-6 col-md-2">
-                <label class="form-label text-muted small mb-1">Action</label>
+                <label class="form-label small mb-1">Action</label>
                 <select name="action" class="form-select form-select-sm">
                     <option value="">-- ทั้งหมด --</option>
                     {% for a in action_list %}
@@ -123,12 +118,12 @@
                 </select>
             </div>
             <div class="col-6 col-md-2">
-                <label class="form-label text-muted small mb-1">วันที่เริ่มต้น</label>
+                <label class="form-label small mb-1">วันที่เริ่มต้น</label>
                 <input type="date" name="date_from" class="form-control form-control-sm"
                        value="{{ filters.date_from }}">
             </div>
             <div class="col-6 col-md-2">
-                <label class="form-label text-muted small mb-1">วันที่สิ้นสุด</label>
+                <label class="form-label small mb-1">วันที่สิ้นสุด</label>
                 <input type="date" name="date_to" class="form-control form-control-sm"
                        value="{{ filters.date_to }}">
             </div>
@@ -165,21 +160,21 @@
             <tbody>
                 {% for log in logs %}
                 <tr>
-                    <td class="text-muted small font-monospace">
+                    <td class="text small font-monospace">
                         {% if log.timestamp %}
                             {{ log.timestamp.strftime('%Y-%m-%d') }}<br>
                             <span style="color:#888">{{ log.timestamp.strftime('%H:%M:%S') }}</span>
                         {% else %}-{% endif %}
                     </td>
                     <td class="fw-semibold">{{ log.username }}</td>
-                    <td><span class="text-muted small">{{ log.role or '-' }}</span></td>
+                    <td><span class="text small">{{ log.role or '-' }}</span></td>
                     <td>
                         <span class="action-badge action-{{ log.action }}">{{ log.action }}</span>
                     </td>
-                    <td class="text-muted small">{{ log.detail or '-' }}</td>
-                    <td class="text-muted small font-monospace">{{ log.ip_address or '-' }}</td>
+                    <td class="text small">{{ log.detail or '-' }}</td>
+                    <td class="text small font-monospace">{{ log.ip_address or '-' }}</td>
                     <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-                        <span class="text-muted small" title="{{ log.user_agent or '' }}">
+                        <span class="text small" title="{{ log.user_agent or '' }}">
                             {{ log.user_agent or '-' }}
                         </span>
                     </td>
@@ -192,7 +187,7 @@
     {% if total_pages > 1 %}
     <div class="d-flex justify-content-between align-items-center px-3 py-2"
          style="border-top:1px solid var(--border-color)">
-        <small class="text-muted">
+        <small>
             แสดง {{ (page-1)*per_page+1 }}–{{ [page*per_page, total]|min }} จาก {{ total }} รายการ
         </small>
         <nav>
@@ -217,7 +212,7 @@
     {% endif %}
 
     {% else %}
-    <div class="text-center py-5 text-muted">
+    <div class="text-center py-5">
         <i class="bi bi-shield-check d-block mb-3" style="font-size:2.5rem;opacity:.3"></i>
         <p class="mb-0">ยังไม่มี Log ที่ตรงกับเงื่อนไข</p>
         {% if filters.action or filters.user or filters.date_from or filters.date_to %}

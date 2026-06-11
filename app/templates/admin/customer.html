@@ -21,19 +21,12 @@
         background-color: #28a745 !important;
         border-color: #28a745 !important;
     }
-
-    .modal-content {
-    background-color: #fff !important;
-    color: #000 !important;
-}
-
-
 </style>
 
 <div class="container mt-4">
     <h2 class="mb-4 d-flex justify-content-between">
         ผู้ใช้งาน (Customers)
-        {% if current_user.role in ['SuperAdmin', 'Admin_orange', 'Admin_white'] %}
+        {% if current_user.role in ['SuperAdmin', 'Admin_orange', 'Admin_white', 'Admin', 'admin'] %}
         <button class="btn btn-success btn-sm" id="CustomerBtn">+ เพิ่ม Customers</button>
         {% endif %}
     </h2>
@@ -86,7 +79,7 @@
 
                         <!-- Toggle -->
                         <td class="text-center">
-                            {% if current_user.role in ['SuperAdmin','Admin','Admin_orange','Admin_white'] %}
+                            {% if current_user.role in ['SuperAdmin','Admin','admin','Admin_orange','Admin_white'] %}
                             <div class="form-check form-switch d-inline-block">
                                 <input class="form-check-input verify-toggle custom-switch" type="checkbox" {% if customer.is_verified %}checked{% endif %}>
                             </div>
