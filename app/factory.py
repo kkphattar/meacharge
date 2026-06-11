@@ -1,6 +1,7 @@
 # app/factory.py
 from flask import Flask
 from flask_session import Session
+from werkzeug.middleware.proxy_fix import ProxyFix
 import redis
 
 from app.models import db, AdminUser
@@ -20,6 +21,7 @@ login_manager = LoginManager()
 
 def create_app():
     app = Flask(__name__)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
     limiter.init_app(app)
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('database_url')
     app.config['SECRET_KEY'] = os.getenv('secret_key')
