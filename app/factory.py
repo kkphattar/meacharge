@@ -38,7 +38,7 @@ def create_app():
     app.config["SESSION_USE_SIGNER"] = True
     app.config["SESSION_REDIS"] = redis.StrictRedis(host=os.getenv('REDIS_HOST', 'localhost'), port=6379, db=0)
     app.config['SESSION_COOKIE_HTTPONLY'] = True
-    app.config['SESSION_COOKIE_SECURE'] = True        # ใช้ HTTPS เท่านั้น
+    app.config['SESSION_COOKIE_SECURE'] = os.getenv('SESSION_COOKIE_SECURE', 'false').lower() == 'true'
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
 

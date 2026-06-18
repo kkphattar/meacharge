@@ -82,8 +82,9 @@
         </h3>
         <small>บันทึกการดำเนินการของผู้ดูแลระบบ</small>
     </div>
+    {% set export_url = url_for('admin_bp.dev_auditlog_export') ~ '?' ~ build_query(page=1) %}
     <a href="?{{ build_query(page=1) }}&export=1"
-       onclick="this.href='{{ url_for('admin_bp.dev_auditlog_export') }}?{{ build_query(page=1) }}'"
+       onclick="this.href='{{ export_url }}'"
        class="btn btn-outline-success btn-sm">
         <i class="bi bi-download me-1"></i>Export CSV
     </a>
