@@ -2,6 +2,7 @@
 .env
 .env.local
 .env.*.local
+certbot/
 
 # --- Google / OAuth Credentials ---
 client_secret*.json
