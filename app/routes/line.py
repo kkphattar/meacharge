@@ -280,7 +280,7 @@ def get_active_charging_session(user_id):
                     }
                     check_multi_session = True
                     delete_session(key.decode())
-                    print("Deleted active session after retrieval:", session_key)
+                    print("Deleted active session after retrieval:", key.decode())
                     print(f"Active session found: {active_session}")  # Debug log
                 else:
                     session_key = key.decode()
