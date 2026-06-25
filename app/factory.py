@@ -14,7 +14,7 @@ from flask_login import LoginManager
 import os
 
 from datetime import timedelta
-from .extensions import limiter, csrf, mail
+from .extensions import limiter, csrf
 
 load_dotenv()  # โหลด .env
 login_manager = LoginManager()
@@ -25,13 +25,6 @@ def create_app():
     limiter.init_app(app)
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('database_url')
     app.config['SECRET_KEY'] = os.getenv('secret_key')
-    app.config['MAIL_SERVER'] = os.getenv('mail_server')
-    app.config['MAIL_PORT'] = 587
-    app.config['MAIL_USE_TLS'] = True
-    app.config['MAIL_DEFAULT_SENDER'] = os.getenv('mail_sender')
-    app.config['MAIL_USERNAME'] = os.getenv('mail_username')
-    app.config['MAIL_PASSWORD'] = os.getenv('mail_password')
-
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=240)  # เปลี่ยนตามต้องการ เช่น 15, 30 นาที
     app.config["SESSION_TYPE"] = "redis"
     app.config["SESSION_PERMANENT"] = False
@@ -50,7 +43,6 @@ def create_app():
     # csrf = CSRFProtect(app)
 
     db.init_app(app)
-    mail.init_app(app)
     Session(app)
 
     with app.app_context():  # 👈 เพิ่ม block นี้

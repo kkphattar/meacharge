@@ -2,9 +2,9 @@
 from flask import Blueprint, request, session, redirect, render_template, url_for, flash, jsonify
 import requests
 from app.models import db, CustomerUser, ChargeHistory, NotifyEmail
-from app.extensions import mail
+from sqlalchemy.exc import IntegrityError
+from app.utils.mail import send_mail
 from app.routes import delete_session
-from flask_mail import Message
 import os
 import re
 import json
@@ -197,7 +197,11 @@ def register():
         exp_date=exp_dt
     )
     db.session.add(reg)
-    db.session.commit()
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({"status": "error", "errors": ["คุณได้ลงทะเบียนไปแล้ว"]}), 400
 
     # ดึง email admin จาก DB — fallback เป็น env var ถ้าไม่มีข้อมูลใน DB
     admin_emails = [e.email for e in NotifyEmail.query.filter_by(driver_type=driver_type).all()]
@@ -213,13 +217,11 @@ def register():
         admin_emails = [e.strip() for e in raw.split(',') if e.strip()]
 
     if not admin_emails:
-        return f"ไม่พบ email admin ของประเภท {driver_type}"
+        print(f"[register] No admin email configured for driver_type={driver_type}")
+        return jsonify({"status": "error", "errors": [f"ไม่พบ email admin ของประเภท {driver_type}"]}), 400
 
-    msg = Message(
-        subject=f"ตรวจสอบการลงทะเบียน {driver_type} ระบบ Line2Charge",
-        recipients=admin_emails
-    )
-    msg.body = (
+    subject = f"ตรวจสอบการลงทะเบียน {driver_type} ระบบ Line2Charge"
+    body = (
         f"กรุณาตรวจสอบการลงทะเบียนของ: {driver_type}\n"
         f"ชื่อ: {first_name} {last_name}\n"
         f"หน่วยงาน: {department}\n"
@@ -228,10 +230,10 @@ def register():
         f"ลิงก์ข้อมูลผู้ใช้: {web_url}/admin/customer"
     )
     print("Sending email to admin:", admin_emails)
-    print("Email body:", msg.body)
+    print("Email body:", body)
 
     try:
-        mail.send(msg)
+        send_mail(subject, admin_emails, body)
     except Exception as e:
         print(f"[register] Email error: {e}")
 
@@ -612,13 +614,10 @@ def edit_profile():
                 admin_emails = [e.strip() for e in raw.split(',') if e.strip()]
 
             if not admin_emails:
-                return f"ไม่พบ email admin ของประเภท {driver_type}"
+                return jsonify({"status": "error", "errors": [f"ไม่พบ email admin ของประเภท {driver_type}"]}), 400
 
-            msg = Message(
-                subject=f"ตรวจสอบการแก้ไขข้อมูล {driver_type} ระบบ Line2Charge",
-                recipients=admin_emails
-            )
-            msg.body = (
+            subject = f"ตรวจสอบการแก้ไขข้อมูล {driver_type} ระบบ Line2Charge"
+            body = (
                 f"กรุณาตรวจสอบการแก้ไขข้อมูลผู้ใช้:\n"
                 f"ชื่อ: {customer.first_name} {customer.last_name}\n"
                 f"หน่วยงานปัจจุบัน: {department}\n"
@@ -627,9 +626,9 @@ def edit_profile():
                 f"ลิงก์ข้อมูลผู้ใช้: {web_url}/admin/customer"
             )
             try:
-                mail.send(msg)
+                send_mail(subject, admin_emails, body)
             except Exception as e:
-                return f"ไม่ได้แจ้งผู้ดูแลระบบ: {e}"
+                return jsonify({"status": "error", "errors": [f"ไม่ได้แจ้งผู้ดูแลระบบ: {e}"]}), 502
             
         db.session.add(customer)
         db.session.commit()

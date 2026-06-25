@@ -7,13 +7,13 @@ import os
 from datetime import datetime
 import random, string
 import re  # ใช้สำหรับตรวจสอบ email
-from flask_mail import Message
+from app.utils.mail import send_mail
 from flask_login import login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from .forms import LoginForm
 from app.decorators import role_required
 from sqlalchemy.exc import IntegrityError
-from app.extensions import csrf, limiter, mail
+from app.extensions import csrf, limiter
 import redis
 import msgpack
 
@@ -72,12 +72,10 @@ def forgot_password():
             new_pass = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
             user.set_password(new_pass)
             db.session.commit()
-            msg = Message(
-                subject="รีเซ็ตรหัสผ่านของคุณ",
-                recipients=[email]
-                )
-            msg.body = f"รหัสผ่านใหม่ของคุณคือ: {new_pass}"
-            mail.send(msg)
+            try:
+                send_mail("รีเซ็ตรหัสผ่านของคุณ", [email], f"รหัสผ่านใหม่ของคุณคือ: {new_pass}")
+            except Exception as e:
+                return f"ไม่สามารถส่งอีเมลได้: {e}"
             return 'ส่งรหัสผ่านใหม่ไปยังอีเมลแล้ว'
         return 'ไม่พบข้อมูลผู้ใช้หรืออีเมลไม่ตรงกัน'
     return render_template('admin/forgot.html')

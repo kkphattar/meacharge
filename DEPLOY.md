@@ -69,7 +69,7 @@ A    yourdomain.com    -> <DROPLET_IP>
 ## 8. ขอ SSL certificate (Let's Encrypt) และสลับเป็น HTTPS
 แก้ `DOMAIN_NAME` ใน config ให้เป็นโดเมนจริง:
 ```bash
-sed -i "s/DOMAIN_NAME/yourdomain.com/g" nginx/conf.d/app.conf
+sed -i "s/DOMAIN_NAME/mea2charge.com/g" nginx/conf.d/app.conf
 docker compose restart nginx
 ```
 
@@ -77,14 +77,19 @@ docker compose restart nginx
 ```bash
 docker compose run --rm certbot certonly --webroot \
   -w /var/www/certbot \
-  -d yourdomain.com \
-  --email your-email@example.com --agree-tos --no-eff-email
+  -d mea2charge.com \
+  --email phattarin.ki@gmail.com --agree-tos --no-eff-email
+
+  docker compose run --rm --entrypoint certbot certbot certonly --webroot \
+  -w /var/www/certbot \
+  -d mea2charge.com \
+  --email phattarin.ki@gmail.com --agree-tos --no-eff-email
 ```
 
 สลับเป็น config แบบ HTTPS:
 ```bash
 cp nginx/conf.d/app-ssl.conf nginx/conf.d/app.conf
-sed -i "s/DOMAIN_NAME/yourdomain.com/g" nginx/conf.d/app.conf
+sed -i "s/DOMAIN_NAME/mea2charge.com/g" nginx/conf.d/app.conf
 docker compose up -d
 docker compose exec nginx nginx -s reload
 ```
