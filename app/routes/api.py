@@ -269,18 +269,19 @@ def remotestop():
             charging_data['power'] = response_json.get('result', {}).get('kW', 0)
             session['charging_data'] = charging_data
 
-            charge_history = ChargeHistory(
-                user_id=session.get('user_id', None),
-                transaction_id=transaction_id,
-                charge_point_id=charging_data.get('cpid', None),
-                connector_id=charging_data.get('connid', None),
-                start_time=start_time,
-                stop_time=stop_time,
-                energy_used=response_json.get('result', {}).get('kWh', 0),
-                selected_plate=charging_data.get('selected_plate', None)
-            )
-            db.session.add(charge_history)
-            db.session.commit()
+            if not ChargeHistory.query.filter_by(transaction_id=transaction_id).first():
+                charge_history = ChargeHistory(
+                    user_id=session.get('user_id', None),
+                    transaction_id=transaction_id,
+                    charge_point_id=charging_data.get('cpid', None),
+                    connector_id=charging_data.get('connid', None),
+                    start_time=start_time,
+                    stop_time=stop_time,
+                    energy_used=response_json.get('result', {}).get('kWh', 0),
+                    selected_plate=charging_data.get('selected_plate', None)
+                )
+                db.session.add(charge_history)
+                db.session.commit()
 
         session['charging_session'] = False
         session.pop('charging_data', None)
@@ -355,18 +356,19 @@ def energyUsage():
         charging_data['power'] = response_json.get('result', {}).get('kW', 0)
         session['charging_data'] = charging_data
 
-        charge_history = ChargeHistory(
-            user_id=session.get('user_id', None),
-            transaction_id=transaction_id,
-            charge_point_id=charging_data.get('cpid', None),
-            connector_id=charging_data.get('connid', None),
-            start_time=start_time,
-            stop_time=stop_time,
-            energy_used=response_json.get('result', {}).get('kWh', 0),
-            selected_plate=selected_plate
-        )
-        db.session.add(charge_history)
-        db.session.commit()
+        if not ChargeHistory.query.filter_by(transaction_id=transaction_id).first():
+            charge_history = ChargeHistory(
+                user_id=session.get('user_id', None),
+                transaction_id=transaction_id,
+                charge_point_id=charging_data.get('cpid', None),
+                connector_id=charging_data.get('connid', None),
+                start_time=start_time,
+                stop_time=stop_time,
+                energy_used=response_json.get('result', {}).get('kWh', 0),
+                selected_plate=selected_plate
+            )
+            db.session.add(charge_history)
+            db.session.commit()
         session['charging_session'] = False
         session.pop('charging_data', None)
         return jsonify({

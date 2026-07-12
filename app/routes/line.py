@@ -247,11 +247,19 @@ def decode_dict(data):
     }
 
 def get_active_charging_session(user_id):
+    # session ของ request นี้เอง ห้ามลบ/ยุ่งด้วย ไม่งั้น Flask-Session จะ save state เดิม
+    # (รวมถึง charging_session=True ที่ค้างอยู่) ทับกลับเข้าไปใหม่ตอนจบ request กลายเป็น resurrect ตัวเอง
+    current_key = f"session:{session.sid}" if getattr(session, "sid", None) else None
+
     session_keys = r.keys("session:*")
     active_session = None
     check_multi_session = False
 
     for key in session_keys:
+        key_str = key.decode()
+        if key_str == current_key:
+            continue
+
         raw_data = r.get(key)
         if not raw_data:
             continue
@@ -272,26 +280,34 @@ def get_active_charging_session(user_id):
                 print(f"transaction_id", transaction_id)
                 print(f"Decoded charging_data for session {key}: {charging_data}")  # Debug log
                 if transaction_id and decoded.get("charging_session"):
+                    # session เก่าอาจชาร์จเสร็จไปแล้วจริง (บันทึกลง ChargeHistory แล้ว)
+                    # แค่ยังไม่ได้เคลียร์ flag - เช็คกับฐานข้อมูลก่อนเชื่อ flag ใน Redis
+                    already_finished = ChargeHistory.query.filter_by(
+                        transaction_id=int(transaction_id)
+                    ).first() is not None
+                    if already_finished:
+                        r.delete(key_str)
+                        print(f"Transaction {transaction_id} already recorded, deleted stale session {key_str}.")
+                        continue
+
                     active_session = {
-                        "session_key": key.decode(),
+                        "session_key": key_str,
                         "user_id": decoded.get("user_id"),
                         "charging_session": decoded.get("charging_session"),
                         "charging_data": decoded.get("charging_data")
                     }
                     check_multi_session = True
-                    delete_session(key.decode())
-                    print("Deleted active session after retrieval:", key.decode())
+                    delete_session(key_str)
+                    print("Deleted active session after retrieval:", key_str)
                     print(f"Active session found: {active_session}")  # Debug log
                 else:
-                    session_key = key.decode()
-                    r.delete(session_key)
-                    print(f"Inactive session found for user {user_id}, deleted session {session_key}.")  # Debug log
+                    r.delete(key_str)
+                    print(f"Inactive session found for user {user_id}, deleted session {key_str}.")  # Debug log
 
             else:
                 # ลบ session ที่เหลือ
-                session_key = key.decode()
-                r.delete(session_key)
-                print(f"Multiple active sessions found for user {user_id}, deleted session {session_key}.")  # Debug log
+                r.delete(key_str)
+                print(f"Multiple active sessions found for user {user_id}, deleted session {key_str}.")  # Debug log
 
     return active_session
 
