@@ -271,7 +271,7 @@ def get_active_charging_session(user_id):
                 transaction_id = charging_data.get("transaction_id")
                 print(f"transaction_id", transaction_id)
                 print(f"Decoded charging_data for session {key}: {charging_data}")  # Debug log
-                if transaction_id:
+                if transaction_id and decoded.get("charging_session"):
                     active_session = {
                         "session_key": key.decode(),
                         "user_id": decoded.get("user_id"),
