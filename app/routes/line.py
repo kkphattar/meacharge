@@ -380,22 +380,36 @@ def customer_home():
     display_name = session.get('display_name')
     picture_url = session.get('picture_url')
     customer = CustomerUser.query.filter_by(user_id=user_id).first()
-    active_session = get_active_charging_session(user_id)
-    print(f"Active session for user {user_id}: {active_session}")  # Debug log
-    if active_session:
+
+    # เช็ค session ปัจจุบันของ browser นี้ก่อน (กรณีปกติ: เพิ่งกดเริ่มชาร์จในแท็บ/เครื่องเดียวกัน)
+    own_charging_data = session.get('charging_data') or {}
+    if session.get('charging_session') and own_charging_data.get('transaction_id'):
         charging_session = True
-        charging_data = decode_dict(active_session.get('charging_data', {}))
-        print(f"Charging data from active session: {charging_data}")  # Debug log
         charging_data = {
-            "cpid": charging_data.get('cpid'),
-            "connid": charging_data.get('connid'),
-            "card_id": charging_data.get('card_id'),
-            "selected_plate": charging_data.get('selected_plate'),
-            "transaction_id": charging_data.get('transaction_id')
+            "cpid": own_charging_data.get('cpid'),
+            "connid": own_charging_data.get('connid'),
+            "card_id": own_charging_data.get('card_id'),
+            "selected_plate": own_charging_data.get('selected_plate'),
+            "transaction_id": own_charging_data.get('transaction_id')
         }
-        session['charging_data'] = charging_data
-        session_key = active_session['session_key']
-        # delete_session(session_key)
+    else:
+        # ไม่พบใน session ปัจจุบัน - ลองกู้จาก session อื่นของ user คนนี้ (กรณีเปลี่ยนอุปกรณ์/เปิดแอปใหม่กลางชาร์จ)
+        active_session = get_active_charging_session(user_id)
+        print(f"Active session for user {user_id}: {active_session}")  # Debug log
+        if active_session:
+            charging_session = True
+            charging_data = decode_dict(active_session.get('charging_data', {}))
+            print(f"Charging data from active session: {charging_data}")  # Debug log
+            charging_data = {
+                "cpid": charging_data.get('cpid'),
+                "connid": charging_data.get('connid'),
+                "card_id": charging_data.get('card_id'),
+                "selected_plate": charging_data.get('selected_plate'),
+                "transaction_id": charging_data.get('transaction_id')
+            }
+            session['charging_data'] = charging_data
+            session_key = active_session['session_key']
+            # delete_session(session_key)
 
     first_name = customer.first_name if customer else "Guest"
     exp_date = customer.exp_date if customer else "none"
